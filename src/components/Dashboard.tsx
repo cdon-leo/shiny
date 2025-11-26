@@ -1,21 +1,31 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { fetchSalesData, BranchData, getSecondsUntilNextInterval } from '@/lib/data';
+import { fetchSalesData, BranchData, LatestIntervalData, getSecondsUntilNextInterval } from '@/lib/data';
 import { BarChart } from './BarChart';
 import { LineChart } from './LineChart';
+import { IntervalSalesView } from './sales-summary/IntervalSalesView';
+import { CumulativeProgressView } from './sales-summary/CumulativeProgressView';
 import { BranchName } from '@/lib/colors';
+import { RotateCw } from 'lucide-react';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
+type DisplayMode = 'interval' | 'cumulative' | 'charts';
+
+const VIEW_DISPLAY_SECONDS = 20;
 
 export function Dashboard() {
   const [data, setData] = useState<BranchData[]>([]);
+  const [latestInterval, setLatestInterval] = useState<LatestIntervalData | null>(null);
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(getSecondsUntilNextInterval());
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('charts');
+  const [viewCountdown, setViewCountdown] = useState(0);
   const isInitialLoad = useRef(true);
+  const viewTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (showSummary: boolean = false) => {
     try {
       setLoadState('loading');
       const response = await fetchSalesData();
@@ -26,14 +36,27 @@ export function Dashboard() {
         return a.branch.localeCompare(b.branch);
       });
       setData(sortedData);
+      setLatestInterval(response.latestInterval);
       setError(null);
       setLoadState('loaded');
+      
+      // After loading, show interval view first (but not on initial load, unless manually triggered)
+      const shouldShowSummary = showSummary || (!isInitialLoad.current && response.latestInterval);
+      if (shouldShowSummary && response.latestInterval) {
+        setDisplayMode('interval');
+        setViewCountdown(VIEW_DISPLAY_SECONDS);
+      }
+      
       isInitialLoad.current = false;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
       setLoadState('error');
     }
   }, []);
+
+  const handleManualRefresh = useCallback(() => {
+    loadData(true);
+  }, [loadData]);
 
   // Initial load
   useEffect(() => {
@@ -59,14 +82,39 @@ export function Dashboard() {
     return () => clearInterval(interval);
   }, [loadData]);
 
+  // View display countdown timer - handles transitions between views
+  useEffect(() => {
+    if ((displayMode === 'interval' || displayMode === 'cumulative') && viewCountdown > 0) {
+      viewTimerRef.current = setTimeout(() => {
+        setViewCountdown(prev => prev - 1);
+      }, 1000);
+      
+      return () => {
+        if (viewTimerRef.current) {
+          clearTimeout(viewTimerRef.current);
+        }
+      };
+    } else if (displayMode === 'interval' && viewCountdown <= 0) {
+      // Switch from interval to cumulative view
+      setDisplayMode('cumulative');
+      setViewCountdown(VIEW_DISPLAY_SECONDS);
+    } else if (displayMode === 'cumulative' && viewCountdown <= 0) {
+      // Switch back to charts when cumulative countdown is done
+      setDisplayMode('charts');
+    }
+  }, [displayMode, viewCountdown]);
+
   const formatCountdown = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatBranchName = (branch: string) => {
-    return branch.toUpperCase();
+  const getViewLabel = () => {
+    if (displayMode === 'interval') {
+      return 'Progress view in';
+    }
+    return 'Showing charts in';
   };
 
   // Loading overlay for refreshes (not initial load)
@@ -75,7 +123,7 @@ export function Dashboard() {
       <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
         <div className="flex flex-col items-center gap-6">
           <div className="w-12 h-12 border-3 border-border border-t-foreground rounded-full animate-spin" />
-          <h2 className="text-xl font-medium text-foreground tracking-tight">Latest sales arriving</h2>
+          <h2 className="text-xl text-foreground tracking-tight">Latest sales arriving</h2>
         </div>
       </div>
     );
@@ -87,7 +135,7 @@ export function Dashboard() {
       <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
         <div className="flex flex-col items-center gap-6">
           <div className="w-12 h-12 border-3 border-border border-t-foreground rounded-full animate-spin" />
-          <h2 className="text-xl font-medium text-foreground tracking-tight">Loading dashboard...</h2>
+          <h2 className="text-xl text-foreground tracking-tight">Loading dashboard...</h2>
         </div>
       </div>
     );
@@ -99,7 +147,7 @@ export function Dashboard() {
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <p className="text-red-600 text-sm">{error}</p>
         <button 
-          onClick={loadData} 
+          onClick={() => loadData()} 
           className="bg-foreground text-background px-4 py-2 text-sm font-medium rounded hover:opacity-85 transition-opacity"
         >
           Retry
@@ -111,9 +159,83 @@ export function Dashboard() {
   const cdonData = data.find(d => d.branch === 'cdon');
   const fyndiqData = data.find(d => d.branch === 'fyndiq');
 
+  // Show interval sales view (first summary screen)
+  if (displayMode === 'interval' && latestInterval) {
+    return (
+      <div className="flex flex-col h-full">
+        <header className="flex justify-between items-center shrink-0">
+          <button
+            onClick={handleManualRefresh}
+            className="text-xs text-text-secondary hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-border/50"
+            title="Refresh data"
+          >
+            <div className="flex items-center gap-2">
+              <RotateCw className="w-3 h-3" /> Refresh
+            </div>
+          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-secondary">{getViewLabel()}</span>
+              <span className="text-sm font-semibold tabular-nums min-w-8">{viewCountdown}s</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-secondary">Next update in</span>
+              <span className="text-sm font-semibold tabular-nums min-w-12">{formatCountdown(countdown)}</span>
+            </div>
+          </div>
+        </header>
+        <div className="flex-1">
+          <IntervalSalesView data={latestInterval} />
+        </div>
+      </div>
+    );
+  }
+
+  // Show cumulative progress view (second summary screen)
+  if (displayMode === 'cumulative' && latestInterval) {
+    return (
+      <div className="flex flex-col h-full">
+        <header className="flex justify-between items-center shrink-0">
+          <button
+            onClick={handleManualRefresh}
+            className="text-xs text-text-secondary hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-border/50"
+            title="Refresh data"
+          >
+            <div className="flex items-center gap-2">
+              <RotateCw className="w-3 h-3" /> Refresh
+            </div>
+          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-secondary">{getViewLabel()}</span>
+              <span className="text-sm font-semibold tabular-nums min-w-8">{viewCountdown}s</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-secondary">Next update in</span>
+              <span className="text-sm font-semibold tabular-nums min-w-12">{formatCountdown(countdown)}</span>
+            </div>
+          </div>
+        </header>
+        <div className="flex-1">
+          <CumulativeProgressView data={latestInterval} />
+        </div>
+      </div>
+    );
+  }
+
+  // Show charts dashboard
   return (
     <div className="flex flex-col h-full gap-4">
-      <header className="flex justify-end items-center shrink-0">
+      <header className="flex justify-between items-center shrink-0">
+        <button
+          onClick={handleManualRefresh}
+          className="text-xs text-text-secondary hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-border/50"
+          title="Refresh data"
+        >
+          <div className="flex items-center gap-2">
+            <RotateCw className="w-3 h-3" /> Refresh
+          </div>
+        </button>
         <div className="flex items-center gap-2 justify-end">
           <span className="text-xs text-text-secondary">Next update in</span>
           <span className="text-sm font-semibold tabular-nums min-w-12">{formatCountdown(countdown)}</span>

@@ -10,7 +10,7 @@
     }
   },
   "default": {
-    "secondary": "rgba(255, 255, 255, 0.1)"
+    "secondary": "rgba(255, 255, 255, 0.3)"
   }
 }
 

@@ -25,8 +25,23 @@ export interface BranchData {
   lineData: LineChartSeries[];
 }
 
+export interface LatestIntervalBranch {
+  branch: string;
+  gmvThisYear: number;
+  gmvLastYear: number;
+  cumulativeThisYear: number;
+  cumulativeLastYear: number;
+  cumulativeLastYearFullDay: number;
+}
+
+export interface LatestIntervalData {
+  time: string;
+  branches: LatestIntervalBranch[];
+}
+
 export interface SalesResponse {
   data: BranchData[];
+  latestInterval: LatestIntervalData | null;
   lastUpdated: string;
   mock?: boolean;
   error?: string;

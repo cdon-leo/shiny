@@ -45,7 +45,8 @@ export function BarChart({
           indexBy="time"
           groupMode="grouped"
           margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
-          padding={0.3}
+          padding={0.1}
+          innerPadding={0}
           valueScale={{ type: 'linear' }}
           indexScale={{ type: 'band', round: true }}
           colors={[primaryColor, secondaryColor]}

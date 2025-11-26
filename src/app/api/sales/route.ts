@@ -74,6 +74,21 @@ function formatTime(ts: string): string {
   return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
+// Type for latest interval summary
+interface LatestIntervalBranch {
+  branch: string;
+  gmvThisYear: number;
+  gmvLastYear: number;
+  cumulativeThisYear: number;
+  cumulativeLastYear: number;
+  cumulativeLastYearFullDay: number;
+}
+
+interface LatestIntervalData {
+  time: string;
+  branches: LatestIntervalBranch[];
+}
+
 /**
  * Get the cutoff time - the start of the most recently completed 10-minute interval.
  * E.g., at 18:41, returns a Date for 18:30:00
@@ -221,8 +236,126 @@ function transformData(rows: Array<{
   return results;
 }
 
+// Extract latest interval summary from raw data
+function extractLatestIntervalSummary(rows: Array<{
+  branch: string;
+  ts: { value: string };
+  year: number;
+  num_orders: number;
+  gmv_sek: number;
+}>): LatestIntervalData | null {
+  if (!rows || rows.length === 0) {
+    return null;
+  }
+
+  const currentYear = getCurrentYear();
+  const lastYear = currentYear - 1;
+  const cutoffTime = getIntervalCutoffTime();
+  const cutoffTimeStr = cutoffTime.toISOString();
+
+  // Convert to Polars DataFrame
+  const df = pl.DataFrame({
+    branch: rows.map(r => r.branch),
+    ts: rows.map(r => r.ts.value),
+    year: rows.map(r => r.year),
+    gmv_sek: rows.map(r => r.gmv_sek),
+  });
+
+  // Find the latest timestamp that matches our cutoff time
+  // The cutoff time is the start of the previous complete interval
+  const allTimestamps = df
+    .select('ts')
+    .unique()
+    .sort('ts')
+    .getColumn('ts')
+    .toArray() as string[];
+
+  // Find the timestamp that matches our cutoff
+  const latestTs = allTimestamps.find(ts => {
+    const tsDate = new Date(ts);
+    return tsDate.getHours() === cutoffTime.getHours() && 
+           tsDate.getMinutes() === cutoffTime.getMinutes();
+  });
+
+  if (!latestTs) {
+    return null;
+  }
+
+  // Get unique branches
+  const branches = df
+    .select('branch')
+    .unique()
+    .getColumn('branch')
+    .toArray() as string[];
+
+  const branchSummaries: LatestIntervalBranch[] = branches.map(branch => {
+    // Get this year's GMV for the latest interval
+    const thisYearRow = df.filter(
+      pl.col('branch').eq(pl.lit(branch))
+        .and(pl.col('ts').eq(pl.lit(latestTs)))
+        .and(pl.col('year').eq(pl.lit(currentYear)))
+    );
+    const gmvThisYear = thisYearRow.height > 0 
+      ? Math.round(thisYearRow.getColumn('gmv_sek').get(0) as number)
+      : 0;
+
+    // Get last year's GMV for the latest interval
+    const lastYearRow = df.filter(
+      pl.col('branch').eq(pl.lit(branch))
+        .and(pl.col('ts').eq(pl.lit(latestTs)))
+        .and(pl.col('year').eq(pl.lit(lastYear)))
+    );
+    const gmvLastYear = lastYearRow.height > 0 
+      ? Math.round(lastYearRow.getColumn('gmv_sek').get(0) as number)
+      : 0;
+
+    // Calculate cumulative this year (sum of all intervals up to and including latestTs)
+    const cumulativeThisYearDf = df.filter(
+      pl.col('branch').eq(pl.lit(branch))
+        .and(pl.col('year').eq(pl.lit(currentYear)))
+        .and(pl.col('ts').ltEq(pl.lit(latestTs)))
+    );
+    const cumulativeThisYear = cumulativeThisYearDf.height > 0
+      ? Math.round(cumulativeThisYearDf.getColumn('gmv_sek').sum() as number)
+      : 0;
+
+    // Calculate cumulative last year up to this point (same time as latestTs)
+    const cumulativeLastYearDf = df.filter(
+      pl.col('branch').eq(pl.lit(branch))
+        .and(pl.col('year').eq(pl.lit(lastYear)))
+        .and(pl.col('ts').ltEq(pl.lit(latestTs)))
+    );
+    const cumulativeLastYear = cumulativeLastYearDf.height > 0
+      ? Math.round(cumulativeLastYearDf.getColumn('gmv_sek').sum() as number)
+      : 0;
+
+    // Calculate cumulative last year full day (all intervals)
+    const cumulativeLastYearFullDayDf = df.filter(
+      pl.col('branch').eq(pl.lit(branch))
+        .and(pl.col('year').eq(pl.lit(lastYear)))
+    );
+    const cumulativeLastYearFullDay = cumulativeLastYearFullDayDf.height > 0
+      ? Math.round(cumulativeLastYearFullDayDf.getColumn('gmv_sek').sum() as number)
+      : 0;
+
+    return { 
+      branch, 
+      gmvThisYear, 
+      gmvLastYear,
+      cumulativeThisYear,
+      cumulativeLastYear,
+      cumulativeLastYearFullDay,
+    };
+  });
+
+  return {
+    time: formatTime(latestTs),
+    branches: branchSummaries,
+  };
+}
+
 // Generate mock data for testing when BigQuery is not available
-function generateMockData() {
+function generateMockData(): { data: ReturnType<typeof transformData>; latestInterval: LatestIntervalData } {
   const currentYear = getCurrentYear();
   const lastYear = currentYear - 1;
   // Use cutoff time (previous complete interval) instead of current time
@@ -231,14 +364,20 @@ function generateMockData() {
   const cutoffMinute = cutoffTime.getMinutes();
 
   const branches = ['cdon', 'fyndiq'];
+  const latestIntervalBranches: LatestIntervalBranch[] = [];
 
-  return branches.map(branch => {
+  const data = branches.map(branch => {
     const barData = [];
     const thisYearLine: Array<{ x: string; y: number }> = [];
     const lastYearLine: Array<{ x: string; y: number }> = [];
 
     let thisYearCum = 0;
     let lastYearCum = 0;
+    let lastYearFullDayCum = 0;
+    let latestIntervalGmvThisYear = 0;
+    let latestIntervalGmvLastYear = 0;
+    let cumulativeAtLatestThisYear = 0;
+    let cumulativeAtLatestLastYear = 0;
 
     // Different base values for each branch
     const multiplier = branch === 'fyndiq' ? 1.5 : 1;
@@ -261,14 +400,32 @@ function generateMockData() {
         });
 
         lastYearCum += lastYearGmv;
+        lastYearFullDayCum += lastYearGmv;
         lastYearLine.push({ x: time, y: lastYearCum });
 
         if (isPast) {
           thisYearCum += thisYearGmv;
           thisYearLine.push({ x: time, y: thisYearCum });
         }
+
+        // Capture the latest interval data
+        if (h === cutoffHour && m === cutoffMinute) {
+          latestIntervalGmvThisYear = thisYearGmv;
+          latestIntervalGmvLastYear = lastYearGmv;
+          cumulativeAtLatestThisYear = thisYearCum;
+          cumulativeAtLatestLastYear = lastYearCum;
+        }
       }
     }
+
+    latestIntervalBranches.push({
+      branch,
+      gmvThisYear: latestIntervalGmvThisYear,
+      gmvLastYear: latestIntervalGmvLastYear,
+      cumulativeThisYear: cumulativeAtLatestThisYear,
+      cumulativeLastYear: cumulativeAtLatestLastYear,
+      cumulativeLastYearFullDay: lastYearFullDayCum,
+    });
 
     return {
       branch,
@@ -279,6 +436,16 @@ function generateMockData() {
       ],
     };
   });
+
+  const latestTimeStr = `${cutoffHour.toString().padStart(2, '0')}:${cutoffMinute.toString().padStart(2, '0')}`;
+
+  return {
+    data,
+    latestInterval: {
+      time: latestTimeStr,
+      branches: latestIntervalBranches,
+    },
+  };
 }
 
 export async function GET(request: Request) {
@@ -286,8 +453,10 @@ export async function GET(request: Request) {
   const useMock = url.searchParams.get('mock') === 'true' || process.env.USE_MOCK_DATA === 'true';
   
   if (useMock) {
+    const mockResult = generateMockData();
     return NextResponse.json({
-      data: generateMockData(),
+      data: mockResult.data,
+      latestInterval: mockResult.latestInterval,
       lastUpdated: new Date().toISOString(),
     });
   }
@@ -295,9 +464,11 @@ export async function GET(request: Request) {
   try {
     const rows = await fetchFromBigQuery();
     const data = transformData(rows);
+    const latestInterval = extractLatestIntervalSummary(rows);
 
     return NextResponse.json({
       data,
+      latestInterval,
       lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
@@ -305,8 +476,10 @@ export async function GET(request: Request) {
     // Fall back to mock data in development when BigQuery fails
     if (process.env.NODE_ENV === 'development') {
       console.log('Falling back to mock data');
+      const mockResult = generateMockData();
       return NextResponse.json({
-        data: generateMockData(),
+        data: mockResult.data,
+        latestInterval: mockResult.latestInterval,
         lastUpdated: new Date().toISOString(),
         mock: true,
       });
@@ -315,6 +488,7 @@ export async function GET(request: Request) {
       {
         error: error instanceof Error ? error.message : 'An unknown error occurred',
         data: [],
+        latestInterval: null,
         lastUpdated: new Date().toISOString(),
       },
       { status: 500 }
