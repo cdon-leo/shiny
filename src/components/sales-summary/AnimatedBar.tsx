@@ -39,16 +39,16 @@ export function AnimatedBar({
         initial={{ height: animate ? 0 : `${heightPercent}%` }}
         animate={{ height: `${heightPercent}%` }}
         transition={animate ? {
-          duration: 2.5,
+          duration: 5,
           delay,
-          ease: [0.25, 0.1, 0.25, 1],
+          ease: "anticipate",
         } : { duration: 0 }}
       >
         <motion.span
-          className="absolute top-3 text-sm font-semibold text-background whitespace-pre-line text-center leading-tight"
+          className="absolute top-3 text-sm font-semibold text-white/70 whitespace-pre-line text-center leading-tight"
           initial={{ opacity: animate ? 0 : 1 }}
           animate={{ opacity: 1 }}
-          transition={animate ? { duration: 0.3, delay: delay + 2 } : { duration: 0 }}
+          transition={animate ? { duration: 0.3, delay: delay + 4.5 } : { duration: 0 }}
         >
           {displayValue}
         </motion.span>

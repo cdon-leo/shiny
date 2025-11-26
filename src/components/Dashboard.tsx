@@ -12,6 +12,11 @@ import { RotateCw } from 'lucide-react';
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 type DisplayMode = 'interval' | 'cumulative' | 'charts';
 
+// DEV TOGGLE: Set to 'interval', 'cumulative', or 'charts' to force that view
+// Set to null for normal time-based behavior
+
+const DEV_FORCE_VIEW: DisplayMode | null = 'charts';
+
 const VIEW_DISPLAY_SECONDS = 20;
 
 export function Dashboard() {
@@ -83,7 +88,12 @@ export function Dashboard() {
   }, [loadData]);
 
   // View display countdown timer - handles transitions between views
+  // Skip all transitions when DEV_FORCE_VIEW is set
   useEffect(() => {
+    if (DEV_FORCE_VIEW !== null) {
+      return; // Dev mode: skip all view transitions
+    }
+    
     if ((displayMode === 'interval' || displayMode === 'cumulative') && viewCountdown > 0) {
       viewTimerRef.current = setTimeout(() => {
         setViewCountdown(prev => prev - 1);
@@ -104,6 +114,9 @@ export function Dashboard() {
     }
   }, [displayMode, viewCountdown]);
 
+  // Effective display mode (dev toggle overrides normal behavior)
+  const effectiveDisplayMode = DEV_FORCE_VIEW ?? displayMode;
+
   const formatCountdown = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -111,7 +124,7 @@ export function Dashboard() {
   };
 
   const getViewLabel = () => {
-    if (displayMode === 'interval') {
+    if (effectiveDisplayMode === 'interval') {
       return 'Progress view in';
     }
     return 'Showing charts in';
@@ -160,7 +173,7 @@ export function Dashboard() {
   const fyndiqData = data.find(d => d.branch === 'fyndiq');
 
   // Show interval sales view (first summary screen)
-  if (displayMode === 'interval' && latestInterval) {
+  if (effectiveDisplayMode === 'interval' && latestInterval) {
     return (
       <div className="flex flex-col h-full">
         <header className="flex justify-between items-center shrink-0">
@@ -192,7 +205,7 @@ export function Dashboard() {
   }
 
   // Show cumulative progress view (second summary screen)
-  if (displayMode === 'cumulative' && latestInterval) {
+  if (effectiveDisplayMode === 'cumulative' && latestInterval) {
     return (
       <div className="flex flex-col h-full">
         <header className="flex justify-between items-center shrink-0">

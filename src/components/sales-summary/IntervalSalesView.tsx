@@ -1,10 +1,16 @@
 'use client';
 
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import { LatestIntervalData } from '@/lib/data';
 import { BranchBars } from './BranchBars';
 import { calculateIntervalBarHeights, getIntervalStartTime } from './helpers';
 import branchColors from '@/config/branch-colors.json';
+
+const branchLogos: Record<string, string> = {
+  fyndiq: '/fyndiq.svg',
+  cdon: '/cdon.svg',
+};
 
 interface IntervalSalesViewProps {
   data: LatestIntervalData;
@@ -34,17 +40,27 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
       </motion.h1>
 
       {/* Branch charts side by side */}
-      <div className="flex gap-24">
+      <div className="flex gap-72">
         {sortedHeights.map((branchData, branchIndex) => {
           // Find the original branch data to get raw values for change indicator
           const originalBranch = data.branches.find(b => b.branch === branchData.branch);
 
           const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.primary;
 
+          const logoSrc = branchLogos[branchData.branch];
+
           return (
             <BranchBars
               key={branchData.branch}
               branchName={branchData.branch}
+              logo={logoSrc && (
+                <Image
+                  src={logoSrc}
+                  alt={branchData.branch}
+                  width={branchData.branch === 'fyndiq' ? 100 : 48}
+                  height={48}
+                />
+              )}
               bars={branchData.bars}
               changeIndicators={[
                 {
@@ -54,7 +70,7 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
                   showAbsolute: false,
                 },
               ]}
-              baseDelay={branchIndex * 0.5}
+              baseDelay={branchIndex * 3.5}
               thisYearColor={branchColor}
             />
           );

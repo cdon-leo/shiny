@@ -5,6 +5,14 @@ import * as pl from 'nodejs-polars';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Cache for BigQuery results keyed by interval
+let cache: {
+  intervalKey: string;
+  data: ReturnType<typeof transformData>;
+  latestInterval: LatestIntervalData | null;
+  timestamp: Date;
+} | null = null;
+
 // Read the SQL query from file
 function getSqlQuery(): string {
   const queryPath = path.join(process.cwd(), 'src/queries/live_sales_vs_ly.sql');
@@ -113,6 +121,15 @@ function getIntervalCutoffTime(): Date {
   }
   
   return cutoff;
+}
+
+/**
+ * Generate a cache key for the current interval.
+ * Format: YYYY-MM-DD_HH_MM (based on cutoff time)
+ */
+function getIntervalCacheKey(): string {
+  const cutoff = getIntervalCutoffTime();
+  return `${cutoff.toISOString().split('T')[0]}_${cutoff.getHours()}_${cutoff.getMinutes()}`;
 }
 
 // Transform data using Polars
@@ -461,15 +478,36 @@ export async function GET(request: Request) {
     });
   }
 
+  // Check if we have cached data for the current interval
+  const currentIntervalKey = getIntervalCacheKey();
+  if (cache && cache.intervalKey === currentIntervalKey) {
+    console.log(`Returning cached data for interval: ${currentIntervalKey}`);
+    return NextResponse.json({
+      data: cache.data,
+      latestInterval: cache.latestInterval,
+      lastUpdated: cache.timestamp.toISOString(),
+      cached: true,
+    });
+  }
+
   try {
+    console.log(`Fetching fresh data from BigQuery for interval: ${currentIntervalKey}`);
     const rows = await fetchFromBigQuery();
     const data = transformData(rows);
     const latestInterval = extractLatestIntervalSummary(rows);
 
+    // Store in cache
+    cache = {
+      intervalKey: currentIntervalKey,
+      data,
+      latestInterval,
+      timestamp: new Date(),
+    };
+
     return NextResponse.json({
       data,
       latestInterval,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: cache.timestamp.toISOString(),
     });
   } catch (error) {
     console.error('Sales API error:', error);
