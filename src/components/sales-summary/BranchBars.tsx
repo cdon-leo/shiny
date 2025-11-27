@@ -154,7 +154,7 @@ export function BranchBars({
                 {showMetricsAboveBar && bar.isThisYear && indicators.length > 0 && (
                   <motion.div
                     className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center"
-                    style={{ bottom: `calc(${bar.heightPercent}% + 8px)` }}
+                    style={{ bottom: `calc(${bar.heightPercent}% + 16px)` }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: QUICK_APPEAR, delay: metricsDelay }}
@@ -166,17 +166,19 @@ export function BranchBars({
                       return (
                         <div key={i} className="flex flex-col items-center">
                           {indicator.showAbsolute && (
-                            <span className="text-sm text-text-secondary whitespace-nowrap">
+                            <span className="text-lg font-medium text-text-secondary whitespace-nowrap mb-2">
                               {formatAbsoluteChange(indicator.fromValue, indicator.toValue)}
                             </span>
                           )}
+                          <div className={`rounded-full w-22 py-1 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>
                           <span
-                            className={`font-medium text-lg whitespace-nowrap ${
-                              isPositive ? 'text-green-700' : 'text-red-700'
+                            className={`font-bold text-xl whitespace-nowrap ${
+                              isPositive ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
                             {formatPercentChange(percentChange)}
                           </span>
+                          </div>
                         </div>
                       );
                     })}

@@ -8,6 +8,8 @@ import { IntervalSalesView } from './sales-summary/IntervalSalesView';
 import { CumulativeProgressView } from './sales-summary/CumulativeProgressView';
 import { BranchName } from '@/lib/colors';
 import { RotateCw } from 'lucide-react';
+import ElectricBorder from './ElectricBorder';
+import SalesIncoming from './SalesIncoming';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 type DisplayMode = 'interval' | 'cumulative' | 'charts';
@@ -15,7 +17,7 @@ type DisplayMode = 'interval' | 'cumulative' | 'charts';
 // DEV TOGGLE: Set to 'interval', 'cumulative', or 'charts' to force that view
 // Set to null for normal time-based behavior
 
-const DEV_FORCE_VIEW: DisplayMode | null = 'interval';
+const DEV_FORCE_VIEW: DisplayMode | null = 'charts';
 
 const VIEW_DISPLAY_SECONDS = 25;
 
@@ -133,12 +135,7 @@ export function Dashboard() {
   // Loading overlay for refreshes (not initial load)
   if (loadState === 'loading' && !isInitialLoad.current) {
     return (
-      <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
-        <div className="flex flex-col items-center gap-6">
-          <div className="w-12 h-12 border-3 border-border border-t-foreground rounded-full animate-spin" />
-          <h2 className="text-xl text-foreground tracking-tight">Latest sales arriving</h2>
-        </div>
-      </div>
+      <SalesIncoming />
     );
   }
 
@@ -255,31 +252,35 @@ export function Dashboard() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 grid-rows-2 gap-4 flex-1 min-h-0">
+      <div className="flex flex-col gap-4 flex-1 min-h-0">
         {/* CDON Row */}
         {cdonData && (
-          <>
-            <div className="flex flex-col min-h-0">
-              <BarChart data={cdonData.barData} title="GMV (SEK)" branch={cdonData.branch as BranchName} />
+          <ElectricBorder color="#00983D" speed={1} chaos={0.5} thickness={1.5} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
+            <div className="flex gap-4 h-full">
+              <div className="flex-1 flex flex-col min-h-0 min-w-0">
+                <BarChart data={cdonData.barData} title="GMV (SEK)" branch={cdonData.branch as BranchName} />
+              </div>
+              <div className="flex-1 flex flex-col min-h-0 min-w-0">
+                <div className="h-5 mb-1" />
+                <LineChart data={cdonData.lineData} title="Cumulative GMV (SEK)" branch={cdonData.branch as BranchName} />
+              </div>
             </div>
-            <div className="flex flex-col min-h-0">
-              <div className="h-5 mb-1" />
-              <LineChart data={cdonData.lineData} title="Cumulative GMV (SEK)" branch={cdonData.branch as BranchName} />
-            </div>
-          </>
+          </ElectricBorder>
         )}
         
         {/* Fyndiq Row */}
         {fyndiqData && (
-          <>
-            <div className="flex flex-col min-h-0">
-              <BarChart data={fyndiqData.barData} title="GMV (SEK)" branch={fyndiqData.branch as BranchName} />
+          <ElectricBorder color="#FF5E79" speed={1} chaos={0.5} thickness={1.5} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
+            <div className="flex gap-4 h-full">
+              <div className="flex-1 flex flex-col min-h-0 min-w-0">
+                <BarChart data={fyndiqData.barData} title="GMV (SEK)" branch={fyndiqData.branch as BranchName} />
+              </div>
+              <div className="flex-1 flex flex-col min-h-0 min-w-0">
+                <div className="h-5 mb-1" />
+                <LineChart data={fyndiqData.lineData} title="Cumulative GMV (SEK)" branch={fyndiqData.branch as BranchName} />
+              </div>
             </div>
-            <div className="flex flex-col min-h-0">
-              <div className="h-5 mb-1" />
-              <LineChart data={fyndiqData.lineData} title="Cumulative GMV (SEK)" branch={fyndiqData.branch as BranchName} />
-            </div>
-          </>
+          </ElectricBorder>
         )}
       </div>
     </div>
