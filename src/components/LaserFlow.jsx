@@ -46,7 +46,7 @@ uniform float uFade;
 #define EPS 1e-6
 #define EDGE_SOFT (DT_LOCAL*4.0)
 #define DT_LOCAL 0.0038
-#define TAP_RADIUS 6
+#define TAP_RADIUS 4
 #define R_H 150.0
 #define R_V 150.0
 #define FLARE_HEIGHT 16.0
@@ -60,7 +60,7 @@ uniform float uFade;
 // Wisps (animated micro-streaks) that travel along the beam
 #define W_BASE_X 1.5
 #define W_LAYER_GAP 0.25
-#define W_LANES 10
+#define W_LANES 6
 #define W_SIDE_DECAY 0.5
 #define W_HALF 0.01
 #define W_AA 0.15
@@ -76,7 +76,7 @@ uniform float uFade;
 #define FOG_CONTRAST 1.2
 #define FOG_SPEED_U 0.1
 #define FOG_SPEED_V -0.1
-#define FOG_OCTAVES 5
+#define FOG_OCTAVES 3
 #define FOG_BOTTOM_BIAS 0.8
 #define FOG_TILT_TO_MOUSE 0.05
 #define FOG_TILT_DEADZONE 0.01
@@ -258,7 +258,8 @@ export const LaserFlow = ({
   decay = 1.1,
   falloffStart = 1.2,
   fogFallSpeed = 0.6,
-  color = '#FF79C6'
+  color = '#FF79C6',
+  isPaused = false
 }) => {
   const mountRef = useRef(null);
   const rendererRef = useRef(null);
@@ -576,6 +577,11 @@ export const LaserFlow = ({
     fogFallSpeed,
     color
   ]);
+
+  // Sync isPaused prop with internal pausedRef (allows parent to control animation)
+  useEffect(() => {
+    pausedRef.current = isPaused;
+  }, [isPaused]);
 
   return <div ref={mountRef} className={`laser-flow-container ${className || ''}`} style={style} />;
 };

@@ -1,0 +1,44 @@
+services:
+  # Frontend service (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shiny-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Point to the mounted gcloud credentials
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcloud/application_default_credentials.json
+    volumes:
+      # Mount data directory for local development
+      - ./data:/app/data
+      # Mount Google Cloud credentials for local authentication
+      - ~/.config/gcloud/application_default_credentials.json:/app/gcloud/application_default_credentials.json:ro
+    restart: unless-stopped
+    networks:
+      - shiny-network
+
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: shiny-nginx
+    ports:
+      - "80:80"
+    environment:
+      # Internal service URLs (container-to-container communication)
+      - FRONTEND_URL=frontend:3000
+    depends_on:
+      - frontend
+    restart: unless-stopped
+    networks:
+      - shiny-network
+
+# Create a custom network for the services
+networks:
+  shiny-network:
+    driver: bridge

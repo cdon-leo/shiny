@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  serverExternalPackages: [
+  output: "standalone",
+  serverExternalPackages: [ 
     "nodejs-polars",
     "@google-cloud/bigquery",
     "@google-cloud/secret-manager",

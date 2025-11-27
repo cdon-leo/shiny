@@ -1,0 +1,62 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: shiny
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/container-dependencies: '{"nginx": ["frontend"]}'
+        run.googleapis.com/startup-cpu-boost: "true"
+        run.googleapis.com/cpu-throttling: "false"
+        autoscaling.knative.dev/maxScale: "3"
+        autoscaling.knative.dev/minScale: "0"
+
+    spec:
+      containers:
+        - name: frontend
+          image: "$ARTIFACT_REGISTRY_REGION-docker.pkg.dev/$ARTIFACT_REGISTRY_PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY_NAME/shiny-frontend:$RELEASE_TAG"
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"
+            requests:
+              cpu: "0.25"
+              memory: "256Mi"
+          env:
+            - name: PORT
+              value: "3000"
+            - name: BIGQUERY_PROJECT
+              value: "fyndiq"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "678579833649"
+            - name: SECRET_NAME
+              value: "fyndiq-bigquery"
+            - name: PROD
+              value: "true"
+          startupProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /
+              port: 3000
+            periodSeconds: 5
+            timeoutSeconds: 4
+            initialDelaySeconds: 15
+
+        - name: nginx
+          image: "$ARTIFACT_REGISTRY_REGION-docker.pkg.dev/$ARTIFACT_REGISTRY_PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY_NAME/shiny-nginx:$RELEASE_TAG"
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "256Mi"
+            requests:
+              cpu: "0.1"
+              memory: "128Mi"
+          env:
+            - name: FRONTEND_URL
+              value: "127.0.0.1:3000"

@@ -4,6 +4,7 @@ import { ResponsiveBar } from '@nivo/bar';
 import { getChartColors, BranchName } from '@/lib/colors';
 
 export interface BarChartDataPoint {
+  [key: string]: string | number;
   time: string;
   thisYear: number;
   lastYear: number;

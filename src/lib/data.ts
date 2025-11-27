@@ -9,6 +9,7 @@ export interface RawSalesRow {
 }
 
 export interface BarChartDataPoint {
+  [key: string]: string | number;
   time: string;
   thisYear: number;
   lastYear: number;
@@ -65,10 +66,55 @@ export async function fetchSalesData(): Promise<SalesResponse> {
 }
 
 /**
- * Calculate seconds until 1 minute after the next 10-minute interval.
- * E.g., targets :01, :11, :21, :31, :41, :51
+ * Calculate seconds until 30 seconds after the next 10-minute interval ends.
+ * E.g., targets :00:30, :10:30, :20:30, :30:30, :40:30, :50:30
+ * This is when we silently preload data from the API.
  */
-export function getSecondsUntilNextInterval(): number {
+export function getSecondsUntilPreload(): number {
+  const now = new Date();
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+  
+  // Calculate which 10-minute interval we're in (0-5)
+  const minuteInInterval = minutes % 10;
+  
+  // Target is :00:30, :10:30, etc.
+  // If we're before :30 seconds in the :00 minute, target is current interval's :00:30
+  // Otherwise, target is next interval's :00:30
+  
+  let minutesUntilTarget: number;
+  let secondsOffset: number;
+  
+  if (minuteInInterval === 0 && seconds < 30) {
+    // We're in the first 30 seconds of :00/:10/:20 etc. - target is in this same minute
+    minutesUntilTarget = 0;
+    secondsOffset = 30 - seconds;
+  } else if (minuteInInterval === 0) {
+    // We're past :30 in the :00 minute - target is next interval
+    minutesUntilTarget = 10;
+    secondsOffset = 30 - seconds;
+  } else {
+    // We're in minutes 1-9 of the interval - target is next :00:30
+    minutesUntilTarget = 10 - minuteInInterval;
+    secondsOffset = 30 - seconds;
+  }
+  
+  let totalSeconds = minutesUntilTarget * 60 + secondsOffset;
+  
+  // Handle negative seconds (if seconds > 30)
+  if (totalSeconds < 0) {
+    totalSeconds += 600; // Add 10 minutes
+  }
+  
+  return totalSeconds;
+}
+
+/**
+ * Calculate seconds until 1 minute after the next 10-minute interval ends.
+ * E.g., targets :01:00, :11:00, :21:00, :31:00, :41:00, :51:00
+ * This is when we show the anticipation countdown.
+ */
+export function getSecondsUntilDisplay(): number {
   const now = new Date();
   const minutes = now.getMinutes();
   const seconds = now.getSeconds();
@@ -90,6 +136,13 @@ export function getSecondsUntilNextInterval(): number {
   const secondsUntilNext = minutesUntilNext * 60 - seconds;
   
   return secondsUntilNext;
+}
+
+/**
+ * @deprecated Use getSecondsUntilDisplay() instead
+ */
+export function getSecondsUntilNextInterval(): number {
+  return getSecondsUntilDisplay();
 }
 
 /**
