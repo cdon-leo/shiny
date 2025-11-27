@@ -102,27 +102,20 @@ interface LatestIntervalData {
 }
 
 /**
- * Get the cutoff time - the start of the most recently completed 10-minute interval.
- * E.g., at 18:41, returns a Date for 18:30:00
+ * Get the cutoff time - the end of the most recently completed 10-minute interval.
+ * E.g., at 18:41, returns a Date for 18:40:00 (representing the 18:30-18:40 interval)
+ * This matches the SQL which assigns ts = end of interval.
  */
 function getIntervalCutoffTime(): Date {
   const now = new Date();
   const minutes = now.getMinutes();
   
-  // Get the start of the current interval
+  // Get the start of the current interval, which equals the END of the previous interval
   const currentIntervalStart = Math.floor(minutes / 10) * 10;
   
-  // The cutoff is the start of the PREVIOUS interval
   const cutoff = new Date(now);
   cutoff.setSeconds(0, 0);
-  
-  if (currentIntervalStart >= 10) {
-    cutoff.setMinutes(currentIntervalStart - 10);
-  } else {
-    // Need to go to the previous hour
-    cutoff.setHours(cutoff.getHours() - 1);
-    cutoff.setMinutes(50);
-  }
+  cutoff.setMinutes(currentIntervalStart);
   
   return cutoff;
 }

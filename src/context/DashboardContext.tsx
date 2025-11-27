@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { fetchSalesData, BranchData, LatestIntervalData, MetricType } from '@/lib/data';
 
 // View display duration in seconds
-const VIEW_DISPLAY_SECONDS = 25;
+const VIEW_DISPLAY_SECONDS = 30;
 const INCOMING_COUNTDOWN_SECONDS = 10;
 
 // DEV TOGGLE: Set to a route path to force that view, or null for normal behavior

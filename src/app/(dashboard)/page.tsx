@@ -54,8 +54,8 @@ export default function ChartsPage() {
   const fyndiqData = data.find(d => d.branch === 'fyndiq');
 
   // Dynamic chart labels based on metric
-  const barChartTitle = metric === 'orders' ? 'Number of Orders' : 'GMV (SEK)';
-  const lineChartTitle = metric === 'orders' ? 'Cumulative Sum of Orders' : 'Cumulative GMV (SEK)';
+  const barChartTitle = metric === 'orders' ? 'Number of Orders (vs last year)' : 'GMV (SEK)';
+  const lineChartTitle = metric === 'orders' ? 'Cumulative Sum of Orders (vs last year)' : 'Cumulative GMV (SEK)';
 
   return (
     <main className="h-screen px-6 py-4 flex flex-col overflow-hidden">
@@ -71,15 +71,15 @@ export default function ChartsPage() {
           </div>
         </button>
         <div className="flex items-center gap-2 justify-end">
-          <span className="text-xs text-text-secondary">Next update in</span>
-          <span className="text-sm font-semibold tabular-nums min-w-12">{formatCountdown(nextUpdateCountdown)}</span>
+          <span className="text-sm text-text-secondary">Next update in</span>
+          <span className="text-base font-semibold tabular-nums min-w-12">{formatCountdown(nextUpdateCountdown)}</span>
         </div>
       </header>
 
       <div className="flex flex-col gap-4 flex-1 min-h-0">
         {/* CDON Row */}
         {cdonData && (
-          <ElectricBorder color="#00983D" speed={0.8} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
+          <ElectricBorder color="#00983D" speed={0.1} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
             <div className="flex gap-4 h-full">
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <BarChart data={cdonData.barData} title={barChartTitle} branch={cdonData.branch as BranchName} />
@@ -94,7 +94,7 @@ export default function ChartsPage() {
         
         {/* Fyndiq Row */}
         {fyndiqData && (
-          <ElectricBorder color="#FF5E79" speed={0.8} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
+          <ElectricBorder color="#FF5E79" speed={0.1} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
             <div className="flex gap-4 h-full">
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <BarChart data={fyndiqData.barData} title={barChartTitle} branch={fyndiqData.branch as BranchName} />

@@ -4,14 +4,14 @@ with sales_by_year_and_time as (
         
         branch,
 
-        datetime(
+        datetime_add(datetime(
             extract(year from current_date()),
             extract(month from current_date()),
             extract(day from current_date()),
             hour,
             cast(10 * floor(minute / 10) as int64),
             0
-        ) ts,
+        ), interval 10 minute) ts,
 
         year,
 

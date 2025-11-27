@@ -6,6 +6,9 @@ import { LatestIntervalBranch, MetricType } from '@/lib/data';
  * For Orders: use plain numbers for small values, K/M for large
  */
 export function formatMetric(value: number, metric: MetricType = 'gmv'): string {
+  if(metric === 'orders') {
+    return value.toFixed(0);
+  }
   if (value >= 1000000) {
     return `${(value / 1000000).toFixed(2)} M`;
   }
@@ -119,21 +122,21 @@ export function calculateCumulativeBarHeights(
         id: 'lastYearSoFar',
         value: branch.cumulativeLastYear,
         heightPercent: branch.cumulativeLastYear * scaleFactor,
-        label: '2024\nsame time',
+        label: 'Right now\nin 2024',
         isThisYear: false,
       },
       {
         id: 'thisYearSoFar',
         value: branch.cumulativeThisYear,
         heightPercent: branch.cumulativeThisYear * scaleFactor,
-        label: '2025\nso far',
+        label: 'Today\nso far',
         isThisYear: true,
       },
       {
         id: 'lastYearFullDay',
         value: branch.cumulativeLastYearFullDay,
         heightPercent: branch.cumulativeLastYearFullDay * scaleFactor,
-        label: '2024\nwhole day',
+        label: 'End of day\nin 2024',
         isThisYear: false,
       },
     ],
@@ -199,7 +202,7 @@ export function calculateBranchDelays(branchIndex: number): BranchAnimationDelay
     logoDelay: baseDelay,
     lastYearDelay: baseDelay + 0.5,
     thisYearDelay: baseDelay + 1.0,
-    metricsDelay: baseDelay + 1.0 + BAR_EXPAND_DURATION,
+    metricsDelay: baseDelay + 1.0 + BAR_EXPAND_DURATION - 0.4,
   };
 }
 

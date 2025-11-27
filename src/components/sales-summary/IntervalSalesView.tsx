@@ -31,7 +31,7 @@ export function IntervalSalesView({ data, metric }: IntervalSalesViewProps) {
     return a.branch.localeCompare(b.branch);
   });
 
-  const titleText = metric === 'orders' ? 'Orders last 10 minutes' : 'Sales last 10 minutes';
+  const titleText = metric === 'orders' ? 'Orders during the past 10 minutes' : 'Sales during past 10 minutes';
 
   return (
     <div className="flex items-center justify-center h-full">
@@ -63,7 +63,7 @@ export function IntervalSalesView({ data, metric }: IntervalSalesViewProps) {
           const originalBranch = data.branches.find(b => b.branch === branchData.branch);
 
           const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.barColor;
-
+          const branchTextColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.barTextColor;
           const logoSrc = branchLogos[branchData.branch];
 
           // Calculate delays for this branch
@@ -96,6 +96,7 @@ export function IntervalSalesView({ data, metric }: IntervalSalesViewProps) {
               metricsDelay={delays.metricsDelay}
               showMetricsAboveBar={true} // Position metrics above the bar
               thisYearColor={branchColor}
+              thisYearTextColor={branchTextColor}
               metric={metric}
             />
           );

@@ -34,12 +34,13 @@ export function CumulativeProgressView({ data, metric }: CumulativeProgressViewP
     <div className="flex items-center justify-center h-full">
       {/* Title */}
       <motion.div
-        className="flex flex-col items-center text-foreground mb-12 w-1/4"
+        className="flex flex-col items-center text-foreground mb-12 w-1/4 px-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="text-xl mb-3 font-press-start-2p">Progress at</div>
+        <div className="text-xl mb-6 font-press-start-2p text-center">Total orders compared to last year</div>
+        <div className="text-xl mb-3 font-press-start-2p text-center">Time:</div>
         <span className="font-press-start-2p text-5xl">
           <TypeAnimation
             sequence={[
@@ -51,7 +52,6 @@ export function CumulativeProgressView({ data, metric }: CumulativeProgressViewP
             cursor={false}
           />
         </span>
-        <p className="text-sm text-text-secondary mt-6 mx-8 w-2/3 text-center">How are we doing so far compared to last year at the same time, and the whole day?</p>
       </motion.div>
 
       {/* Branch charts side by side */}

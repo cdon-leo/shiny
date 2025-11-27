@@ -64,7 +64,7 @@ export function BranchBars({
   showMetricsAboveBar = false,
   barColor = 'oklch(37.1% 0 0)',
   thisYearColor,
-  barWidth = 100,
+  barWidth = 110,
   thisYearTextColor,
   metric = 'gmv',
 }: BranchBarsProps) {
@@ -113,7 +113,7 @@ export function BranchBars({
                         return (
                           <div key={i} className="flex flex-col items-center">
                             {indicator.showAbsolute && (
-                              <span className="text-lg text-text-secondary whitespace-nowrap">
+                              <span className="text-xl text-text-secondary whitespace-nowrap">
                                 {formatAbsoluteChange(indicator.fromValue, indicator.toValue, metric)}
                               </span>
                             )}
@@ -170,7 +170,7 @@ export function BranchBars({
                       return (
                         <div key={i} className="flex flex-col items-center">
                           {indicator.showAbsolute && (
-                            <span className="text-lg font-medium text-text-secondary whitespace-nowrap mb-2">
+                            <span className="text-xl font-medium text-text-secondary whitespace-nowrap mb-2">
                               {formatAbsoluteChange(indicator.fromValue, indicator.toValue, metric)}
                             </span>
                           )}
