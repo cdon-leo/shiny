@@ -18,6 +18,7 @@ interface DashboardContextType {
   // Data
   data: BranchData[];
   latestInterval: LatestIntervalData | null;
+  pendingLatestInterval: LatestIntervalData | null;
   metric: MetricType;
   loadState: LoadState;
   error: string | null;
@@ -80,6 +81,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [error, setError] = useState<string | null>(null);
   
+  // Pending data state (staged for reveal flow)
+  const [pendingData, setPendingData] = useState<BranchData[] | null>(null);
+  const [pendingLatestInterval, setPendingLatestInterval] = useState<LatestIntervalData | null>(null);
+  
   // Countdown states (updated by local timers in components, but seeded from here)
   const [incomingCountdown, setIncomingCountdown] = useState(INCOMING_COUNTDOWN_SECONDS);
   const [viewSecondsRemaining, setViewSecondsRemaining] = useState(VIEW_DISPLAY_SECONDS);
@@ -94,12 +99,24 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const viewTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Load data from API
-  const loadData = useCallback(async () => {
+  // staged: true = store to pending state (for preload before reveal flow)
+  // staged: false = store directly to displayed state (for initial load)
+  const loadData = useCallback(async (staged: boolean = false) => {
     try {
       setLoadState('loading');
       const response = await fetchSalesData();
-      setData(sortBranchData(response.data));
-      setLatestInterval(response.latestInterval);
+      const sortedData = sortBranchData(response.data);
+      
+      if (staged) {
+        // Store to pending state - will be committed after reveal flow
+        setPendingData(sortedData);
+        setPendingLatestInterval(response.latestInterval);
+      } else {
+        // Store directly to displayed state
+        setData(sortedData);
+        setLatestInterval(response.latestInterval);
+      }
+      
       setMetric(response.metric);
       setError(null);
       setLoadState('loaded');
@@ -109,6 +126,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setLoadState('error');
     }
   }, []);
+  
+  // Commit pending data to displayed state (after reveal flow completes)
+  const commitPendingData = useCallback(() => {
+    if (pendingData) {
+      setData(pendingData);
+      setPendingData(null);
+    }
+    if (pendingLatestInterval) {
+      setLatestInterval(pendingLatestInterval);
+      setPendingLatestInterval(null);
+    }
+  }, [pendingData, pendingLatestInterval]);
   
   // Manual refresh - replay the flow from /incoming
   const triggerRefresh = useCallback(() => {
@@ -148,9 +177,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       setNextUpdateCountdown(getSecondsUntilNextUpdate());
       
       // Preload trigger: at :00:30 (30 seconds after interval ends)
+      // Use staged: true so data goes to pending state until reveal flow completes
       if (minuteInInterval === 0 && seconds === 30 && hasPreloadedForInterval.current !== currentIntervalKey) {
         hasPreloadedForInterval.current = currentIntervalKey;
-        loadData();
+        loadData(true);
       }
       
       // Display trigger: at :01:00 (1 minute after interval ends)
@@ -197,7 +227,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         setViewSecondsRemaining(VIEW_DISPLAY_SECONDS);
         router.push('/cumulative');
       } else if (pathname === '/cumulative') {
-        // Go back to charts
+        // Commit pending data before going back to charts
+        commitPendingData();
         router.push('/');
       }
       return;
@@ -212,7 +243,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         clearTimeout(viewTimerRef.current);
       }
     };
-  }, [pathname, viewSecondsRemaining, router]);
+  }, [pathname, viewSecondsRemaining, router, commitPendingData]);
   
   // Reset view timer when entering interval/cumulative
   useEffect(() => {
@@ -225,6 +256,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const value: DashboardContextType = {
     data,
     latestInterval,
+    pendingLatestInterval,
     metric,
     loadState,
     error,

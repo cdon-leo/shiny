@@ -13,14 +13,18 @@ function formatCountdown(seconds: number): string {
 export default function IntervalPage() {
   const { 
     latestInterval, 
+    pendingLatestInterval,
     metric,
     triggerRefresh,
     viewSecondsRemaining,
     nextUpdateCountdown,
   } = useDashboard();
 
+  // Use pending data if available (new data being revealed), otherwise fall back to current
+  const displayData = pendingLatestInterval ?? latestInterval;
+
   // If no interval data, show loading
-  if (!latestInterval) {
+  if (!displayData) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-text-secondary">Loading interval data...</div>
@@ -53,7 +57,7 @@ export default function IntervalPage() {
         </div>
       </header>
       <div className="flex-1">
-        <IntervalSalesView data={latestInterval} metric={metric} />
+        <IntervalSalesView data={displayData} metric={metric} />
       </div>
     </div>
     </main>
