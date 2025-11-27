@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { TypeAnimation } from 'react-type-animation';
-import { LatestIntervalData } from '@/lib/data';
+import { LatestIntervalData, MetricType } from '@/lib/data';
 import { BranchBars } from './BranchBars';
 import { calculateCumulativeBarHeights, calculateBranchDelays, ANIMATION_TIMING } from './helpers';
 import branchColors from '@/config/branch-colors.json';
@@ -16,9 +16,10 @@ const branchLogos: Record<string, string> = {
 
 interface CumulativeProgressViewProps {
   data: LatestIntervalData;
+  metric: MetricType;
 }
 
-export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
+export function CumulativeProgressView({ data, metric }: CumulativeProgressViewProps) {
   const [typingComplete, setTypingComplete] = useState(false);
   const barHeights = calculateCumulativeBarHeights(data.branches);
 
@@ -103,6 +104,7 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
               metricsDelay={delays.metricsDelay}
               thisYearColor={branchColor}
               thisYearTextColor={branchTextColor}
+              metric={metric}
             />
           );
         })}

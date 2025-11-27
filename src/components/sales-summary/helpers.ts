@@ -1,9 +1,11 @@
-import { LatestIntervalBranch } from '@/lib/data';
+import { LatestIntervalBranch, MetricType } from '@/lib/data';
 
 /**
- * Format a GMV value for display (e.g., 1.2M, 100k, 500)
+ * Format a metric value for display (e.g., 1.2M, 100k, 500)
+ * For GMV: always use K/M formatting
+ * For Orders: use plain numbers for small values, K/M for large
  */
-export function formatGmv(value: number): string {
+export function formatMetric(value: number, metric: MetricType = 'gmv'): string {
   if (value >= 1000000) {
     return `${(value / 1000000).toFixed(2)} M`;
   }
@@ -11,6 +13,13 @@ export function formatGmv(value: number): string {
     return `${Math.round(value / 1000)} K`;
   }
   return value.toFixed(0);
+}
+
+/**
+ * @deprecated Use formatMetric instead
+ */
+export function formatGmv(value: number): string {
+  return formatMetric(value, 'gmv');
 }
 
 /**
@@ -33,10 +42,10 @@ export function formatPercentChange(percent: number): string {
 /**
  * Format an absolute change with sign (e.g., "+200 K", "-100 K")
  */
-export function formatAbsoluteChange(from: number, to: number): string {
+export function formatAbsoluteChange(from: number, to: number, metric: MetricType = 'gmv'): string {
   const diff = to - from;
   const sign = diff >= 0 ? '+' : '-';
-  return `${sign}${formatGmv(Math.abs(diff))}`;
+  return `${sign}${formatMetric(Math.abs(diff), metric)}`;
 }
 
 export interface BarConfig {

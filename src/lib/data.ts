@@ -40,10 +40,13 @@ export interface LatestIntervalData {
   branches: LatestIntervalBranch[];
 }
 
+export type MetricType = 'gmv' | 'orders';
+
 export interface SalesResponse {
   data: BranchData[];
   latestInterval: LatestIntervalData | null;
   lastUpdated: string;
+  metric: MetricType;
   mock?: boolean;
   error?: string;
 }

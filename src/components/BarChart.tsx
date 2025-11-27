@@ -36,7 +36,7 @@ export function BarChart({
 
   return (
     <div className="flex flex-col gap-1 flex-1 min-h-0">
-      <h3 className="text-[0.625rem] font-medium text-text-secondary uppercase tracking-wide m-0">
+      <h3 className="text-[1.5rem] font-medium text-text-secondary uppercase tracking-wide m-0">
         {title}
       </h3>
       <div className="flex-1 min-h-0 w-full">

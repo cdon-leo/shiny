@@ -4,6 +4,10 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import * as pl from 'nodejs-polars';
 import * as fs from 'fs';
 import * as path from 'path';
+import dashboardConfig from '@/config/dashboard.json';
+
+type MetricType = 'gmv' | 'orders';
+const metric: MetricType = dashboardConfig.metric as MetricType;
 
 // Cache for BigQuery results keyed by interval
 let cache: {
@@ -177,38 +181,39 @@ function transformData(rows: Array<{
       .getColumn('ts')
       .toArray() as string[];
 
-    // Create bar chart data (GMV by time bucket)
+    // Create bar chart data (metric by time bucket)
+    const metricColumn = metric === 'orders' ? 'num_orders' : 'gmv_sek';
     const barData = allTimestamps.map(ts => {
       const tsDate = new Date(ts);
       
-      // Get this year's GMV (only if before cutoff time - the previous complete interval)
-      let thisYearGmv = 0;
+      // Get this year's value (only if before cutoff time - the previous complete interval)
+      let thisYearValue = 0;
       if (tsDate <= cutoffTime) {
         const thisYearRow = filtered.filter(
           pl.col('ts').eq(pl.lit(ts)).and(pl.col('year').eq(pl.lit(currentYear)))
         );
         if (thisYearRow.height > 0) {
-          thisYearGmv = thisYearRow.getColumn('gmv_sek').get(0) as number;
+          thisYearValue = thisYearRow.getColumn(metricColumn).get(0) as number;
         }
       }
 
-      // Get last year's GMV (always show)
-      let lastYearGmv = 0;
+      // Get last year's value (always show)
+      let lastYearValue = 0;
       const lastYearRow = filtered.filter(
         pl.col('ts').eq(pl.lit(ts)).and(pl.col('year').eq(pl.lit(lastYear)))
       );
       if (lastYearRow.height > 0) {
-        lastYearGmv = lastYearRow.getColumn('gmv_sek').get(0) as number;
+        lastYearValue = lastYearRow.getColumn(metricColumn).get(0) as number;
       }
 
       return {
         time: formatTime(ts),
-        thisYear: Math.round(thisYearGmv),
-        lastYear: Math.round(lastYearGmv),
+        thisYear: Math.round(thisYearValue),
+        lastYear: Math.round(lastYearValue),
       };
     });
 
-    // Create line chart data (cumulative GMV)
+    // Create line chart data (cumulative metric)
     const thisYearLine: Array<{ x: string; y: number }> = [];
     const lastYearLine: Array<{ x: string; y: number }> = [];
     
@@ -224,7 +229,7 @@ function transformData(rows: Array<{
         pl.col('ts').eq(pl.lit(ts)).and(pl.col('year').eq(pl.lit(lastYear)))
       );
       if (lastYearRow.height > 0) {
-        lastYearCumulative += lastYearRow.getColumn('gmv_sek').get(0) as number;
+        lastYearCumulative += lastYearRow.getColumn(metricColumn).get(0) as number;
       }
       lastYearLine.push({ x: timeLabel, y: Math.round(lastYearCumulative) });
 
@@ -234,7 +239,7 @@ function transformData(rows: Array<{
           pl.col('ts').eq(pl.lit(ts)).and(pl.col('year').eq(pl.lit(currentYear)))
         );
         if (thisYearRow.height > 0) {
-          thisYearCumulative += thisYearRow.getColumn('gmv_sek').get(0) as number;
+          thisYearCumulative += thisYearRow.getColumn(metricColumn).get(0) as number;
         }
         thisYearLine.push({ x: timeLabel, y: Math.round(thisYearCumulative) });
       }
@@ -269,13 +274,14 @@ function extractLatestIntervalSummary(rows: Array<{
   const lastYear = currentYear - 1;
   const cutoffTime = getIntervalCutoffTime();
   const cutoffTimeStr = cutoffTime.toISOString();
+  const metricColumn = metric === 'orders' ? 'num_orders' : 'gmv_sek';
 
   // Convert to Polars DataFrame
   const df = pl.DataFrame({
     branch: rows.map(r => r.branch),
     ts: rows.map(r => r.ts.value),
     year: rows.map(r => r.year),
-    gmv_sek: rows.map(r => r.gmv_sek),
+    metric_value: rows.map(r => metric === 'orders' ? r.num_orders : r.gmv_sek),
   });
 
   // Find the latest timestamp that matches our cutoff time
@@ -306,24 +312,24 @@ function extractLatestIntervalSummary(rows: Array<{
     .toArray() as string[];
 
   const branchSummaries: LatestIntervalBranch[] = branches.map(branch => {
-    // Get this year's GMV for the latest interval
+    // Get this year's value for the latest interval
     const thisYearRow = df.filter(
       pl.col('branch').eq(pl.lit(branch))
         .and(pl.col('ts').eq(pl.lit(latestTs)))
         .and(pl.col('year').eq(pl.lit(currentYear)))
     );
     const gmvThisYear = thisYearRow.height > 0 
-      ? Math.round(thisYearRow.getColumn('gmv_sek').get(0) as number)
+      ? Math.round(thisYearRow.getColumn('metric_value').get(0) as number)
       : 0;
 
-    // Get last year's GMV for the latest interval
+    // Get last year's value for the latest interval
     const lastYearRow = df.filter(
       pl.col('branch').eq(pl.lit(branch))
         .and(pl.col('ts').eq(pl.lit(latestTs)))
         .and(pl.col('year').eq(pl.lit(lastYear)))
     );
     const gmvLastYear = lastYearRow.height > 0 
-      ? Math.round(lastYearRow.getColumn('gmv_sek').get(0) as number)
+      ? Math.round(lastYearRow.getColumn('metric_value').get(0) as number)
       : 0;
 
     // Calculate cumulative this year (sum of all intervals up to and including latestTs)
@@ -333,7 +339,7 @@ function extractLatestIntervalSummary(rows: Array<{
         .and(pl.col('ts').ltEq(pl.lit(latestTs)))
     );
     const cumulativeThisYear = cumulativeThisYearDf.height > 0
-      ? Math.round(cumulativeThisYearDf.getColumn('gmv_sek').sum() as number)
+      ? Math.round(cumulativeThisYearDf.getColumn('metric_value').sum() as number)
       : 0;
 
     // Calculate cumulative last year up to this point (same time as latestTs)
@@ -343,7 +349,7 @@ function extractLatestIntervalSummary(rows: Array<{
         .and(pl.col('ts').ltEq(pl.lit(latestTs)))
     );
     const cumulativeLastYear = cumulativeLastYearDf.height > 0
-      ? Math.round(cumulativeLastYearDf.getColumn('gmv_sek').sum() as number)
+      ? Math.round(cumulativeLastYearDf.getColumn('metric_value').sum() as number)
       : 0;
 
     // Calculate cumulative last year full day (all intervals)
@@ -352,7 +358,7 @@ function extractLatestIntervalSummary(rows: Array<{
         .and(pl.col('year').eq(pl.lit(lastYear)))
     );
     const cumulativeLastYearFullDay = cumulativeLastYearFullDayDf.height > 0
-      ? Math.round(cumulativeLastYearFullDayDf.getColumn('gmv_sek').sum() as number)
+      ? Math.round(cumulativeLastYearFullDayDf.getColumn('metric_value').sum() as number)
       : 0;
 
     return { 
@@ -383,6 +389,13 @@ function generateMockData(): { data: ReturnType<typeof transformData>; latestInt
   const branches = ['cdon', 'fyndiq'];
   const latestIntervalBranches: LatestIntervalBranch[] = [];
 
+  // Different ranges based on metric type
+  const isOrders = metric === 'orders';
+  const baseMin = isOrders ? 50 : 50000;
+  const baseRange = isOrders ? 150 : 150000;
+  const thisYearMin = isOrders ? 60 : 60000;
+  const thisYearRange = isOrders ? 180 : 180000;
+
   const data = branches.map(branch => {
     const barData = [];
     const thisYearLine: Array<{ x: string; y: number }> = [];
@@ -391,8 +404,8 @@ function generateMockData(): { data: ReturnType<typeof transformData>; latestInt
     let thisYearCum = 0;
     let lastYearCum = 0;
     let lastYearFullDayCum = 0;
-    let latestIntervalGmvThisYear = 0;
-    let latestIntervalGmvLastYear = 0;
+    let latestIntervalValueThisYear = 0;
+    let latestIntervalValueLastYear = 0;
     let cumulativeAtLatestThisYear = 0;
     let cumulativeAtLatestLastYear = 0;
 
@@ -406,29 +419,29 @@ function generateMockData(): { data: ReturnType<typeof transformData>; latestInt
         // Only show data up to the cutoff time (previous complete interval)
         const isPast = h < cutoffHour || (h === cutoffHour && m <= cutoffMinute);
         
-        // Random GMV between 50000 and 200000 SEK per interval
-        const lastYearGmv = Math.floor((Math.random() * 150000 + 50000) * multiplier);
-        const thisYearGmv = isPast ? Math.floor((Math.random() * 180000 + 60000) * multiplier) : 0;
+        // Random value based on metric type
+        const lastYearValue = Math.floor((Math.random() * baseRange + baseMin) * multiplier);
+        const thisYearValue = isPast ? Math.floor((Math.random() * thisYearRange + thisYearMin) * multiplier) : 0;
 
         barData.push({
           time,
-          thisYear: thisYearGmv,
-          lastYear: lastYearGmv,
+          thisYear: thisYearValue,
+          lastYear: lastYearValue,
         });
 
-        lastYearCum += lastYearGmv;
-        lastYearFullDayCum += lastYearGmv;
+        lastYearCum += lastYearValue;
+        lastYearFullDayCum += lastYearValue;
         lastYearLine.push({ x: time, y: lastYearCum });
 
         if (isPast) {
-          thisYearCum += thisYearGmv;
+          thisYearCum += thisYearValue;
           thisYearLine.push({ x: time, y: thisYearCum });
         }
 
         // Capture the latest interval data
         if (h === cutoffHour && m === cutoffMinute) {
-          latestIntervalGmvThisYear = thisYearGmv;
-          latestIntervalGmvLastYear = lastYearGmv;
+          latestIntervalValueThisYear = thisYearValue;
+          latestIntervalValueLastYear = lastYearValue;
           cumulativeAtLatestThisYear = thisYearCum;
           cumulativeAtLatestLastYear = lastYearCum;
         }
@@ -437,8 +450,8 @@ function generateMockData(): { data: ReturnType<typeof transformData>; latestInt
 
     latestIntervalBranches.push({
       branch,
-      gmvThisYear: latestIntervalGmvThisYear,
-      gmvLastYear: latestIntervalGmvLastYear,
+      gmvThisYear: latestIntervalValueThisYear,
+      gmvLastYear: latestIntervalValueLastYear,
       cumulativeThisYear: cumulativeAtLatestThisYear,
       cumulativeLastYear: cumulativeAtLatestLastYear,
       cumulativeLastYearFullDay: lastYearFullDayCum,
@@ -475,6 +488,7 @@ export async function GET(request: Request) {
       data: mockResult.data,
       latestInterval: mockResult.latestInterval,
       lastUpdated: new Date().toISOString(),
+      metric,
     });
   }
 
@@ -486,6 +500,7 @@ export async function GET(request: Request) {
       data: cache.data,
       latestInterval: cache.latestInterval,
       lastUpdated: cache.timestamp.toISOString(),
+      metric,
       cached: true,
     });
   }
@@ -508,6 +523,7 @@ export async function GET(request: Request) {
       data,
       latestInterval,
       lastUpdated: cache.timestamp.toISOString(),
+      metric,
     });
   } catch (error) {
     console.error('Sales API error:', error);
@@ -519,6 +535,7 @@ export async function GET(request: Request) {
         data: mockResult.data,
         latestInterval: mockResult.latestInterval,
         lastUpdated: new Date().toISOString(),
+        metric,
         mock: true,
       });
     }
@@ -528,6 +545,7 @@ export async function GET(request: Request) {
         data: [],
         latestInterval: null,
         lastUpdated: new Date().toISOString(),
+        metric,
       },
       { status: 500 }
     );

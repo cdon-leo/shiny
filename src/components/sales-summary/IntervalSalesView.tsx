@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { TypeAnimation } from 'react-type-animation';
-import { LatestIntervalData } from '@/lib/data';
+import { LatestIntervalData, MetricType } from '@/lib/data';
 import { BranchBars } from './BranchBars';
 import { calculateIntervalBarHeights, getIntervalStartTime, calculateBranchDelays, ANIMATION_TIMING } from './helpers';
 import branchColors from '@/config/branch-colors.json';
@@ -16,9 +16,10 @@ const branchLogos: Record<string, string> = {
 
 interface IntervalSalesViewProps {
   data: LatestIntervalData;
+  metric: MetricType;
 }
 
-export function IntervalSalesView({ data }: IntervalSalesViewProps) {
+export function IntervalSalesView({ data, metric }: IntervalSalesViewProps) {
   const [typingComplete, setTypingComplete] = useState(false);
   const startTime = getIntervalStartTime(data.time);
   const barHeights = calculateIntervalBarHeights(data.branches);
@@ -30,6 +31,8 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
     return a.branch.localeCompare(b.branch);
   });
 
+  const titleText = metric === 'orders' ? 'Orders last 10 minutes' : 'Sales last 10 minutes';
+
   return (
     <div className="flex items-center justify-center h-full">
       {/* Title */}
@@ -39,7 +42,7 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="text-md mb-3 font-press-start-2p">Sales last 10 minutes</div>
+        <div className="text-md mb-3 font-press-start-2p">{titleText}</div>
         <span className="font-press-start-2p text-3xl">
           <TypeAnimation
             sequence={[
@@ -93,6 +96,7 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
               metricsDelay={delays.metricsDelay}
               showMetricsAboveBar={true} // Position metrics above the bar
               thisYearColor={branchColor}
+              metric={metric}
             />
           );
         })}

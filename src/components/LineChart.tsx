@@ -41,7 +41,7 @@ export function LineChart({ data, title, branch }: LineChartProps) {
 
   return (
     <div className="flex flex-col gap-1 flex-1 min-h-0">
-      <h3 className="text-[0.625rem] font-medium text-text-secondary uppercase tracking-wide m-0">
+      <h3 className="text-[1.5rem] font-medium text-text-secondary uppercase tracking-wide m-0">
         {title}
       </h3>
       <div className="flex-1 min-h-0 w-full">
@@ -59,7 +59,7 @@ export function LineChart({ data, title, branch }: LineChartProps) {
           colors={({ id }) => {
             return id === `${currentYear}` ? branchColors.primary : secondaryColor;
           }}
-          lineWidth={2}
+          lineWidth={3}
           pointSize={0}
           enableArea={false}
           enableGridX={false}

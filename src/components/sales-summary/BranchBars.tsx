@@ -2,8 +2,9 @@
 
 import { motion } from 'motion/react';
 import { ReactNode } from 'react';
+import { MetricType } from '@/lib/data';
 import { AnimatedBar } from './AnimatedBar';
-import { formatGmv, formatPercentChange, formatAbsoluteChange, calculatePercentChange, BarConfig, ANIMATION_TIMING } from './helpers';
+import { formatMetric, formatPercentChange, formatAbsoluteChange, calculatePercentChange, BarConfig, ANIMATION_TIMING } from './helpers';
 
 export type { BarConfig };
 
@@ -47,6 +48,8 @@ export interface BranchBarsProps {
   thisYearTextColor?: string;
   /** Bar width in pixels */
   barWidth?: number;
+  /** Metric type for formatting values */
+  metric?: MetricType;
 }
 
 export function BranchBars({
@@ -63,6 +66,7 @@ export function BranchBars({
   thisYearColor,
   barWidth = 100,
   thisYearTextColor,
+  metric = 'gmv',
 }: BranchBarsProps) {
   const { QUICK_APPEAR } = ANIMATION_TIMING;
 
@@ -110,7 +114,7 @@ export function BranchBars({
                           <div key={i} className="flex flex-col items-center">
                             {indicator.showAbsolute && (
                               <span className="text-lg text-text-secondary whitespace-nowrap">
-                                {formatAbsoluteChange(indicator.fromValue, indicator.toValue)}
+                                {formatAbsoluteChange(indicator.fromValue, indicator.toValue, metric)}
                               </span>
                             )}
                             <div className={`rounded-full w-22 py-1 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>
@@ -142,7 +146,7 @@ export function BranchBars({
             return (
               <div key={bar.id} className="relative h-full flex items-end">
                 <AnimatedBar
-                  displayValue={formatGmv(bar.value)}
+                  displayValue={formatMetric(bar.value, metric)}
                   heightPercent={bar.heightPercent}
                   delay={bar.isThisYear ? thisYearDelay : lastYearDelay}
                   animationMode={bar.isThisYear ? 'expand' : 'fadeIn'}
@@ -167,7 +171,7 @@ export function BranchBars({
                         <div key={i} className="flex flex-col items-center">
                           {indicator.showAbsolute && (
                             <span className="text-lg font-medium text-text-secondary whitespace-nowrap mb-2">
-                              {formatAbsoluteChange(indicator.fromValue, indicator.toValue)}
+                              {formatAbsoluteChange(indicator.fromValue, indicator.toValue, metric)}
                             </span>
                           )}
                           <div className={`rounded-full w-22 py-1 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>

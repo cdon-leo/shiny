@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { fetchSalesData, BranchData, LatestIntervalData, SalesResponse, getSecondsUntilDisplay } from '@/lib/data';
+import { fetchSalesData, BranchData, LatestIntervalData, SalesResponse, MetricType, getSecondsUntilDisplay } from '@/lib/data';
 import { BarChart } from './BarChart';
 import { LineChart } from './LineChart';
 import { IntervalSalesView } from './sales-summary/IntervalSalesView';
@@ -24,6 +24,7 @@ const VIEW_DISPLAY_SECONDS = 25;
 export function Dashboard() {
   const [data, setData] = useState<BranchData[]>([]);
   const [latestInterval, setLatestInterval] = useState<LatestIntervalData | null>(null);
+  const [metric, setMetric] = useState<MetricType>('gmv');
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(getSecondsUntilDisplay());
@@ -59,6 +60,7 @@ export function Dashboard() {
       const sortedData = sortData(response.data);
       setData(sortedData);
       setLatestInterval(response.latestInterval);
+      setMetric(response.metric);
       setError(null);
       setLoadState('loaded');
       isInitialLoad.current = false;
@@ -92,6 +94,7 @@ export function Dashboard() {
     if (preloadedData) {
       setData(preloadedData.data);
       setLatestInterval(preloadedData.latestInterval);
+      setMetric(preloadedData.metric);
     }
     // Start the interval view sequence
     displayModeRef.current = 'interval';
@@ -230,6 +233,10 @@ export function Dashboard() {
   const cdonData = data.find(d => d.branch === 'cdon');
   const fyndiqData = data.find(d => d.branch === 'fyndiq');
 
+  // Dynamic chart labels based on metric
+  const barChartTitle = metric === 'orders' ? 'Number of Orders' : 'GMV (SEK)';
+  const lineChartTitle = metric === 'orders' ? 'Cumulative Sum of Orders' : 'Cumulative GMV (SEK)';
+
   // Show interval sales view (first summary screen)
   if (effectiveDisplayMode === 'interval' && latestInterval) {
     return (
@@ -256,7 +263,7 @@ export function Dashboard() {
           </div>
         </header>
         <div className="flex-1">
-          <IntervalSalesView data={latestInterval} />
+          <IntervalSalesView data={latestInterval} metric={metric} />
         </div>
       </div>
     );
@@ -288,7 +295,7 @@ export function Dashboard() {
           </div>
         </header>
         <div className="flex-1">
-          <CumulativeProgressView data={latestInterval} />
+          <CumulativeProgressView data={latestInterval} metric={metric} />
         </div>
       </div>
     );
@@ -319,11 +326,11 @@ export function Dashboard() {
           <ElectricBorder color="#00983D" speed={0.8} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
             <div className="flex gap-4 h-full">
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
-                <BarChart data={cdonData.barData} title="GMV (SEK)" branch={cdonData.branch as BranchName} />
+                <BarChart data={cdonData.barData} title={barChartTitle} branch={cdonData.branch as BranchName} />
               </div>
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <div className="h-5 mb-1" />
-                <LineChart data={cdonData.lineData} title="Cumulative GMV (SEK)" branch={cdonData.branch as BranchName} />
+                <LineChart data={cdonData.lineData} title={lineChartTitle} branch={cdonData.branch as BranchName} />
               </div>
             </div>
           </ElectricBorder>
@@ -334,11 +341,11 @@ export function Dashboard() {
           <ElectricBorder color="#FF5E79" speed={0.8} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
             <div className="flex gap-4 h-full">
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
-                <BarChart data={fyndiqData.barData} title="GMV (SEK)" branch={fyndiqData.branch as BranchName} />
+                <BarChart data={fyndiqData.barData} title={barChartTitle} branch={fyndiqData.branch as BranchName} />
               </div>
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <div className="h-5 mb-1" />
-                <LineChart data={fyndiqData.lineData} title="Cumulative GMV (SEK)" branch={fyndiqData.branch as BranchName} />
+                <LineChart data={fyndiqData.lineData} title={lineChartTitle} branch={fyndiqData.branch as BranchName} />
               </div>
             </div>
           </ElectricBorder>
