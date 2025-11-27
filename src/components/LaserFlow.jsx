@@ -259,7 +259,8 @@ export const LaserFlow = ({
   falloffStart = 1.2,
   fogFallSpeed = 0.6,
   color = '#FF79C6',
-  isPaused = false
+  isPaused = false,
+  skipInViewCheck = false
 }) => {
   const mountRef = useRef(null);
   const rendererRef = useRef(null);
@@ -274,6 +275,7 @@ export const LaserFlow = ({
   const emaDtRef = useRef(16.7);
   const pausedRef = useRef(false);
   const inViewRef = useRef(true);
+  const skipInViewCheckRef = useRef(skipInViewCheck);
 
   const hexToRGB = hex => {
     let c = hex.trim();
@@ -289,6 +291,9 @@ export const LaserFlow = ({
 
   useEffect(() => {
     const mount = mountRef.current;
+    console.log('[LaserFlow] useEffect running, mount:', mount);
+    console.log('[LaserFlow] mount dimensions:', mount?.clientWidth, 'x', mount?.clientHeight);
+    
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: false,
@@ -397,7 +402,22 @@ export const LaserFlow = ({
       resizeRaf = requestAnimationFrame(setSizeNow);
     };
 
-    setSizeNow();
+    // Wait for layout to complete before initial size calculation
+    // This is important for client-side navigation where the DOM
+    // might not have dimensions immediately on mount
+    const initSize = () => {
+      console.log('[LaserFlow] initSize check:', mount.clientWidth, 'x', mount.clientHeight);
+      if (mount.clientWidth > 0 && mount.clientHeight > 0) {
+        console.log('[LaserFlow] Dimensions ready, calling setSizeNow');
+        setSizeNow();
+      } else {
+        // Element doesn't have dimensions yet, wait for next frame
+        console.log('[LaserFlow] Dimensions not ready, retrying...');
+        requestAnimationFrame(initSize);
+      }
+    };
+    requestAnimationFrame(initSize);
+    
     const ro = new ResizeObserver(scheduleResize);
     ro.observe(mount);
 
@@ -480,9 +500,18 @@ export const LaserFlow = ({
       lastFpsCheckRef.current = now;
     };
 
+    let frameCount = 0;
     const animate = () => {
       raf = requestAnimationFrame(animate);
-      if (pausedRef.current || !inViewRef.current) return;
+      if (pausedRef.current || (!skipInViewCheckRef.current && !inViewRef.current)) {
+        if (frameCount < 5) console.log('[LaserFlow] Animation skipped - paused:', pausedRef.current, 'inView:', inViewRef.current, 'skipCheck:', skipInViewCheckRef.current);
+        frameCount++;
+        return;
+      }
+      if (frameCount < 5) {
+        console.log('[LaserFlow] Animation frame running, resolution:', uniforms.iResolution.value.x, 'x', uniforms.iResolution.value.y);
+        frameCount++;
+      }
 
       const t = clock.getElapsedTime();
       const dt = Math.max(0, t - prevTime);
@@ -582,6 +611,11 @@ export const LaserFlow = ({
   useEffect(() => {
     pausedRef.current = isPaused;
   }, [isPaused]);
+
+  // Sync skipInViewCheck prop
+  useEffect(() => {
+    skipInViewCheckRef.current = skipInViewCheck;
+  }, [skipInViewCheck]);
 
   return <div ref={mountRef} className={`laser-flow-container ${className || ''}`} style={style} />;
 };

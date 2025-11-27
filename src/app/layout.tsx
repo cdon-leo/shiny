@@ -19,13 +19,7 @@ const pressStart2P = Press_Start_2P({
   subsets: ["latin"],
 });
 
-const handjet = Handjet({
-  weight: ["400"],
-  variable: "--font-handjet",
-  subsets: ["latin"],
-});
-
-const fontClasses = `${titilliumWeb.variable} ${geistMono.variable} ${pressStart2P.variable} ${handjet.variable}`;
+const fontClasses = `${titilliumWeb.variable} ${geistMono.variable} ${pressStart2P.variable}`;
 
 export const metadata: Metadata = {
   title: "Live Sales Dashboard",
