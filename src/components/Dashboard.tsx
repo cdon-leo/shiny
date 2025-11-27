@@ -15,7 +15,7 @@ type DisplayMode = 'interval' | 'cumulative' | 'charts';
 // DEV TOGGLE: Set to 'interval', 'cumulative', or 'charts' to force that view
 // Set to null for normal time-based behavior
 
-const DEV_FORCE_VIEW: DisplayMode | null = 'charts';
+const DEV_FORCE_VIEW: DisplayMode | null = 'cumulative';
 
 const VIEW_DISPLAY_SECONDS = 20;
 

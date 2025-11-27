@@ -5,7 +5,7 @@ import { LatestIntervalBranch } from '@/lib/data';
  */
 export function formatGmv(value: number): string {
   if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)} M`;
+    return `${(value / 1000000).toFixed(2)} M`;
   }
   if (value >= 1000) {
     return `${Math.round(value / 1000)} K`;
@@ -35,7 +35,7 @@ export function formatPercentChange(percent: number): string {
  */
 export function formatAbsoluteChange(from: number, to: number): string {
   const diff = to - from;
-  const sign = diff >= 0 ? '+' : '';
+  const sign = diff >= 0 ? '+' : '-';
   return `${sign}${formatGmv(Math.abs(diff))}`;
 }
 
@@ -110,7 +110,7 @@ export function calculateCumulativeBarHeights(
         id: 'lastYearSoFar',
         value: branch.cumulativeLastYear,
         heightPercent: branch.cumulativeLastYear * scaleFactor,
-        label: '2024\nso far',
+        label: '2024\nsame time',
         isThisYear: false,
       },
       {
@@ -146,5 +146,51 @@ export function getIntervalStartTime(endTime: string): string {
   }
   
   return `${startHours.toString().padStart(2, '0')}:${startMinutes.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Animation timing constants for sequential animation flow
+ */
+export const ANIMATION_TIMING = {
+  // Typing animation
+  TYPING_START_DELAY: 0.5,
+  TYPING_DURATION: 3.5,
+  
+  // Bar animation duration
+  BAR_EXPAND_DURATION: 4.5,
+  BAR_VALUE_DELAY: 4.0, // relative to bar start
+  
+  // Quick appear animation duration
+  QUICK_APPEAR: 0.4,
+  
+  // Time between end of typing and first branch
+  POST_TYPING_GAP: 0.3,
+  
+  // Time between branches
+  BRANCH_GAP: 7.5,
+};
+
+export interface BranchAnimationDelays {
+  logoDelay: number;
+  lastYearDelay: number;
+  thisYearDelay: number;
+  metricsDelay: number;
+}
+
+/**
+ * Calculate animation delays for a branch based on its index
+ */
+export function calculateBranchDelays(branchIndex: number): BranchAnimationDelays {
+  const { TYPING_START_DELAY, TYPING_DURATION, POST_TYPING_GAP, BAR_EXPAND_DURATION, BAR_VALUE_DELAY, BRANCH_GAP } = ANIMATION_TIMING;
+  
+  // Base delay: after typing finishes + gap
+  const baseDelay = TYPING_START_DELAY + TYPING_DURATION + POST_TYPING_GAP + (branchIndex * BRANCH_GAP);
+  
+  return {
+    logoDelay: baseDelay,
+    lastYearDelay: baseDelay + 0.5,
+    thisYearDelay: baseDelay + 1.0,
+    metricsDelay: baseDelay + 1.0 + BAR_EXPAND_DURATION,
+  };
 }
 

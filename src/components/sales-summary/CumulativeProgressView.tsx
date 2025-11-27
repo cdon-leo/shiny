@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
+import { TypeAnimation } from 'react-type-animation';
 import { LatestIntervalData } from '@/lib/data';
 import { BranchBars } from './BranchBars';
-import { calculateCumulativeBarHeights } from './helpers';
+import { calculateCumulativeBarHeights, calculateBranchDelays, ANIMATION_TIMING } from './helpers';
 import branchColors from '@/config/branch-colors.json';
 
 const branchLogos: Record<string, string> = {
@@ -17,6 +19,7 @@ interface CumulativeProgressViewProps {
 }
 
 export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
+  const [typingComplete, setTypingComplete] = useState(false);
   const barHeights = calculateCumulativeBarHeights(data.branches);
 
   // Sort branches: Fyndiq first, then CDON (matching the mockup layout)
@@ -27,19 +30,31 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
+    <div className="flex items-center justify-center h-full">
       {/* Title */}
-      <motion.h1
-        className="text-2xl text-foreground mb-12"
+      <motion.div
+        className="flex flex-col items-center text-foreground mb-12 w-1/4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        Progress at {data.time}
-      </motion.h1>
+        <div className="text-xl mb-2">Progress at</div>
+        <span className="font-press-start-2p text-5xl">
+          <TypeAnimation
+            sequence={[
+              ANIMATION_TIMING.TYPING_START_DELAY * 1000,
+              data.time,
+              () => setTypingComplete(true),
+            ]}
+            speed={{type: "keyStrokeDelayInMs", value: 400}}
+            cursor={false}
+          />
+        </span>
+        <p className="text-sm text-text-secondary mt-4 mx-8 text-center">How are we doing so far compared to last year at the same time, and the whole day?</p>
+      </motion.div>
 
       {/* Branch charts side by side */}
-      <div className="flex gap-24">
+      <div className="flex items-center justify-center gap-24 w-1/2">
         {sortedHeights.map((branchData, branchIndex) => {
           // Find the original branch data to get raw values for change indicators
           const originalBranch = data.branches.find(b => b.branch === branchData.branch);
@@ -47,6 +62,9 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
           const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.primary;
           
           const logoSrc = branchLogos[branchData.branch];
+
+          // Calculate delays for this branch
+          const delays = calculateBranchDelays(branchIndex);
 
           // Bar order: 0=2024 so far, 1=2025 so far (animated), 2=2024 whole day
           // Show comparisons: 2025 vs 2024 so far, and 2025 vs 2024 whole day
@@ -79,12 +97,16 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
                   showAbsolute: true,
                 },
               ]}
-              baseDelay={branchIndex * 3.5}
+              logoDelay={delays.logoDelay}
+              lastYearDelay={delays.lastYearDelay}
+              thisYearDelay={delays.thisYearDelay}
+              metricsDelay={delays.metricsDelay}
               thisYearColor={branchColor}
             />
           );
         })}
       </div>
+      <div className="w-1/4"></div>
     </div>
   );
 }

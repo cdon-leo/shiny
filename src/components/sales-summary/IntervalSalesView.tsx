@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
+import { TypeAnimation } from 'react-type-animation';
 import { LatestIntervalData } from '@/lib/data';
 import { BranchBars } from './BranchBars';
-import { calculateIntervalBarHeights, getIntervalStartTime } from './helpers';
+import { calculateIntervalBarHeights, getIntervalStartTime, calculateBranchDelays, ANIMATION_TIMING } from './helpers';
 import branchColors from '@/config/branch-colors.json';
 
 const branchLogos: Record<string, string> = {
@@ -17,6 +19,7 @@ interface IntervalSalesViewProps {
 }
 
 export function IntervalSalesView({ data }: IntervalSalesViewProps) {
+  const [typingComplete, setTypingComplete] = useState(false);
   const startTime = getIntervalStartTime(data.time);
   const barHeights = calculateIntervalBarHeights(data.branches);
 
@@ -28,19 +31,30 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
+    <div className="flex items-center justify-center h-full">
       {/* Title */}
-      <motion.h1
-        className="text-3xl font-bold text-foreground mb-12"
+      <motion.div
+        className="flex flex-col items-center text-foreground mb-12 w-1/4"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        Sales {startTime}–{data.time}
-      </motion.h1>
+        <div className="text-md mb-3 font-press-start-2p">Sales last 10 minutes</div>
+        <span className="font-press-start-2p text-3xl">
+          <TypeAnimation
+            sequence={[
+              ANIMATION_TIMING.TYPING_START_DELAY * 1000,
+              `${startTime}–${data.time}`,
+              () => setTypingComplete(true),
+            ]}
+            speed={{type: "keyStrokeDelayInMs", value: 300}}
+            cursor={false}
+          />
+        </span>
+      </motion.div>
 
       {/* Branch charts side by side */}
-      <div className="flex gap-72">
+      <div className="flex items-center justify-center gap-48 w-1/2">
         {sortedHeights.map((branchData, branchIndex) => {
           // Find the original branch data to get raw values for change indicator
           const originalBranch = data.branches.find(b => b.branch === branchData.branch);
@@ -48,6 +62,9 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
           const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.primary;
 
           const logoSrc = branchLogos[branchData.branch];
+
+          // Calculate delays for this branch
+          const delays = calculateBranchDelays(branchIndex);
 
           return (
             <BranchBars
@@ -67,15 +84,20 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
                   afterBarIndex: 1, // Show above the "this year" bar
                   fromValue: originalBranch?.gmvLastYear ?? 0,
                   toValue: originalBranch?.gmvThisYear ?? 0,
-                  showAbsolute: false,
+                  showAbsolute: true, // Now showing absolute change
                 },
               ]}
-              baseDelay={branchIndex * 3.5}
+              logoDelay={delays.logoDelay}
+              lastYearDelay={delays.lastYearDelay}
+              thisYearDelay={delays.thisYearDelay}
+              metricsDelay={delays.metricsDelay}
+              showMetricsAboveBar={true} // Position metrics above the bar
               thisYearColor={branchColor}
             />
           );
         })}
       </div>
+      <div className="w-1/4"></div>
     </div>
   );
 }

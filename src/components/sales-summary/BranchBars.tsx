@@ -3,7 +3,7 @@
 import { motion } from 'motion/react';
 import { ReactNode } from 'react';
 import { AnimatedBar } from './AnimatedBar';
-import { formatGmv, formatPercentChange, formatAbsoluteChange, calculatePercentChange, BarConfig } from './helpers';
+import { formatGmv, formatPercentChange, formatAbsoluteChange, calculatePercentChange, BarConfig, ANIMATION_TIMING } from './helpers';
 
 export type { BarConfig };
 
@@ -29,8 +29,16 @@ export interface BranchBarsProps {
   bars: BarConfig[];
   /** Change indicators to show between bars */
   changeIndicators?: ChangeIndicator[];
-  /** Base delay for animation (only for thisYear bars) */
-  baseDelay?: number;
+  /** Delay for logo animation */
+  logoDelay?: number;
+  /** Delay for last year bars and labels */
+  lastYearDelay?: number;
+  /** Delay for this year bar animation */
+  thisYearDelay?: number;
+  /** Delay for metrics/change indicators */
+  metricsDelay?: number;
+  /** Whether to show metrics above the bar instead of at top of chart */
+  showMetricsAboveBar?: boolean;
   /** Default bar color for last year bars */
   barColor?: string;
   /** Color for this year's bars (uses branch primary color) */
@@ -44,14 +52,19 @@ export function BranchBars({
   logo,
   bars,
   changeIndicators = [],
-  baseDelay = 0,
-  barColor = '#171717',
+  logoDelay = 0,
+  lastYearDelay = 0,
+  thisYearDelay = 0,
+  metricsDelay = 0,
+  showMetricsAboveBar = false,
+  barColor = 'oklch(37.1% 0 0)',
   thisYearColor,
-  barWidth = 80,
+  barWidth = 100,
 }: BranchBarsProps) {
-  // Find the delay for the animated (thisYear) bar
-  const thisYearIndex = bars.findIndex(b => b.isThisYear);
-  const animatedBarDelay = baseDelay + 0.2;
+  const { QUICK_APPEAR } = ANIMATION_TIMING;
+
+  // Find the this year bar to get its height for positioning metrics above it
+  const thisYearBar = bars.find(b => b.isThisYear);
 
   return (
     <div className="flex flex-col items-center h-full">
@@ -60,7 +73,7 @@ export function BranchBars({
         className="mb-2 flex items-center justify-center"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: baseDelay }}
+        transition={{ duration: 0.4, delay: logoDelay }}
       >
         {logo ?? (
           <h2 className="text-2xl font-bold text-foreground">
@@ -71,20 +84,74 @@ export function BranchBars({
 
       {/* Chart container with fixed structure */}
       <div className="flex flex-col h-[75vh]">
-        {/* Fixed height indicator row */}
-        <div className="h-20 flex items-end gap-4">
+        {/* Fixed height indicator row - only show if not showMetricsAboveBar */}
+        {!showMetricsAboveBar && (
+          <div className="h-20 flex items-end gap-4">
+            {bars.map((bar, index) => {
+              const indicators = changeIndicators.filter(c => c.afterBarIndex === index);
+
+              return (
+                <div key={`ind-${bar.id}`} className="flex flex-col items-center justify-end" style={{ width: barWidth }}>
+                  {indicators.length > 0 && (
+                    <motion.div
+                      className="flex items-center gap-16"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: QUICK_APPEAR, delay: metricsDelay }}
+                    >
+                      {indicators.map((indicator, i) => {
+                        const percentChange = calculatePercentChange(indicator.fromValue, indicator.toValue);
+                        const isPositive = percentChange >= 0;
+
+                        return (
+                          <div key={i} className="flex flex-col items-center">
+                            {indicator.showAbsolute && (
+                              <span className="text-sm text-text-secondary whitespace-nowrap">
+                                {formatAbsoluteChange(indicator.fromValue, indicator.toValue)}
+                              </span>
+                            )}
+                            <span
+                              className={`font-medium text-lg whitespace-nowrap ${
+                                isPositive ? 'text-green-700' : 'text-red-700'
+                              }`}
+                            >
+                              {formatPercentChange(percentChange)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Bar area - all bars share the same height reference */}
+        <div className="flex-1 flex items-end gap-6 relative">
           {bars.map((bar, index) => {
+            const color = bar.isThisYear && thisYearColor ? thisYearColor : barColor;
             const indicators = changeIndicators.filter(c => c.afterBarIndex === index);
-            const showDelay = bar.isThisYear ? animatedBarDelay + 2.5 : 0;
 
             return (
-              <div key={`ind-${bar.id}`} className="flex flex-col items-center justify-end" style={{ width: barWidth }}>
-                {indicators.length > 0 && (
+              <div key={bar.id} className="relative h-full flex items-end">
+                <AnimatedBar
+                  displayValue={formatGmv(bar.value)}
+                  heightPercent={bar.heightPercent}
+                  delay={bar.isThisYear ? thisYearDelay : lastYearDelay}
+                  animationMode={bar.isThisYear ? 'expand' : 'fadeIn'}
+                  color={color}
+                  width={barWidth}
+                />
+                {/* Show metrics above bar if showMetricsAboveBar is enabled */}
+                {showMetricsAboveBar && bar.isThisYear && indicators.length > 0 && (
                   <motion.div
-                    className="flex items-center gap-16"
+                    className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center"
+                    style={{ bottom: `calc(${bar.heightPercent}% + 8px)` }}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3, delay: showDelay }}
+                    transition={{ duration: QUICK_APPEAR, delay: metricsDelay }}
                   >
                     {indicators.map((indicator, i) => {
                       const percentChange = calculatePercentChange(indicator.fromValue, indicator.toValue);
@@ -98,7 +165,7 @@ export function BranchBars({
                             </span>
                           )}
                           <span
-                            className={`font-medium text-lg whitespace-nowrap   ${
+                            className={`font-medium text-lg whitespace-nowrap ${
                               isPositive ? 'text-green-700' : 'text-red-700'
                             }`}
                           >
@@ -114,25 +181,6 @@ export function BranchBars({
           })}
         </div>
 
-        {/* Bar area - all bars share the same height reference */}
-        <div className="flex-1 flex items-end gap-6">
-          {bars.map((bar) => {
-            const color = bar.isThisYear && thisYearColor ? thisYearColor : barColor;
-
-            return (
-              <AnimatedBar
-                key={bar.id}
-                displayValue={formatGmv(bar.value)}
-                heightPercent={bar.heightPercent}
-                delay={bar.isThisYear ? animatedBarDelay : 0}
-                animate={bar.isThisYear ?? false}
-                color={color}
-                width={barWidth}
-              />
-            );
-          })}
-        </div>
-
         {/* Labels row */}
         <div className="h-12 flex items-start gap-6 mt-2">
           {bars.map((bar) => (
@@ -142,7 +190,7 @@ export function BranchBars({
               style={{ width: barWidth }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: bar.isThisYear ? animatedBarDelay + 0.5 : 0 }}
+              transition={{ duration: QUICK_APPEAR, delay: bar.isThisYear ? thisYearDelay + 0.5 : lastYearDelay }}
             >
               {bar.label}
             </motion.span>
