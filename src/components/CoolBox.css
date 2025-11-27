@@ -1,0 +1,140 @@
+.cool-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 2px solid var(--box-color);
+  background: linear-gradient(
+    135deg,
+    var(--box-color-18) 0%,
+    var(--box-color-08) 30%,
+    var(--box-color-04) 50%,
+    var(--box-color-08) 70%,
+    var(--box-color-15) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradient-shift 6s ease-in-out infinite, glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 25px var(--box-color-40),
+      0 0 50px var(--box-color-20),
+      inset 0 0 60px var(--box-color-08);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px var(--box-color-60),
+      0 0 80px var(--box-color-30),
+      inset 0 0 80px var(--box-color-12);
+  }
+}
+
+/* Corner glow - top left */
+.cool-box-corner-tl {
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 200px;
+  height: 200px;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--box-color-35) 0%, var(--box-color-15) 40%, transparent 70%);
+  filter: blur(20px);
+  animation: corner-pulse 4s ease-in-out infinite;
+}
+
+/* Corner glow - bottom right */
+.cool-box-corner-br {
+  position: absolute;
+  bottom: -60px;
+  right: -60px;
+  width: 320px;
+  height: 320px;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--box-color-30) 0%, var(--box-color-12) 40%, transparent 60%);
+  filter: blur(25px);
+  animation: corner-pulse 4s ease-in-out infinite 2s;
+}
+
+@keyframes corner-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Shimmer effect */
+.cool-box-shimmer-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 10px;
+}
+
+.cool-box-shimmer {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 15%,
+    var(--box-color-10) 30%,
+    var(--box-color-20) 50%,
+    var(--box-color-10) 70%,
+    transparent 85%
+  );
+  animation: shimmer 8s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  40%, 100% {
+    left: 100%;
+  }
+}
+
+/* Top edge highlight */
+.cool-box-edge {
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--box-color-60), transparent);
+  animation: edge-pulse 3s ease-in-out infinite;
+}
+
+@keyframes edge-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.cool-box-content {
+  position: relative;
+  z-index: 10;
+  height: 100%;
+}
+

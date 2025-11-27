@@ -13,15 +13,33 @@ export interface LineChartSeries {
   data: LineChartDataPoint[];
 }
 
+export interface ComparisonStats {
+  cumulativeThisYear: number;
+  cumulativeLastYear: number;
+  cumulativeLastYearFullDay: number;
+}
+
 interface LineChartProps {
   data: LineChartSeries[];
   title: string;
   branch: BranchName;
+  comparisonStats?: ComparisonStats;
 }
 
 const currentYear = new Date().getFullYear();
 
-export function LineChart({ data, title, branch }: LineChartProps) {
+// Format number with thousand separators
+function formatNumber(num: number): string {
+  return new Intl.NumberFormat('sv-SE').format(Math.round(num));
+}
+
+// Format percentage with sign
+function formatPercent(num: number): string {
+  const sign = num >= 0 ? '+' : '';
+  return `${sign}${num.toFixed(1)}%`;
+}
+
+export function LineChart({ data, title, branch, comparisonStats }: LineChartProps) {
   const branchColors = getBranchColors(branch);
   const secondaryColor = getSecondaryColor();
   
@@ -39,12 +57,71 @@ export function LineChart({ data, title, branch }: LineChartProps) {
   }, [] as string[]);
   const tickValues = allXValues.filter((_, index) => index % 3 === 0);
 
+  // Calculate comparison values
+  const vsSameTimeDiff = comparisonStats 
+    ? comparisonStats.cumulativeThisYear - comparisonStats.cumulativeLastYear 
+    : null;
+  const vsSameTimePct = comparisonStats && comparisonStats.cumulativeLastYear > 0
+    ? ((comparisonStats.cumulativeThisYear - comparisonStats.cumulativeLastYear) / comparisonStats.cumulativeLastYear) * 100
+    : null;
+  const vsFullDayDiff = comparisonStats
+    ? comparisonStats.cumulativeThisYear - comparisonStats.cumulativeLastYearFullDay
+    : null;
+  const vsFullDayPct = comparisonStats && comparisonStats.cumulativeLastYearFullDay > 0
+    ? ((comparisonStats.cumulativeThisYear - comparisonStats.cumulativeLastYearFullDay) / comparisonStats.cumulativeLastYearFullDay) * 100
+    : null;
+
   return (
     <div className="flex flex-col gap-1 flex-1 min-h-0">
       <h3 className="text-[1.5rem] font-medium text-text-secondary uppercase tracking-wide m-0">
         {title}
       </h3>
-      <div className="flex-1 min-h-0 w-full">
+      <div className="flex-1 min-h-0 w-full relative">
+        {/* Comparison stats overlay */}
+        {comparisonStats && (
+          <div className="absolute top-6 left-25 z-10 flex flex-col gap-3 pointer-events-none">
+            {/* vs Same Time Last Year */}
+            <div className="bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border border-border/50">
+              <div className="uppercase tracking-wider text-text-secondary mb-1">
+                vs Same Time LY
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span 
+                  className="text-lg font-semibold tabular-nums"
+                  style={{ color: vsSameTimeDiff !== null && vsSameTimeDiff >= 0 ? branchColors.primary : '#ef4444' }}
+                >
+                  {vsSameTimeDiff !== null ? (vsSameTimeDiff >= 0 ? '+' : '') + formatNumber(vsSameTimeDiff) : '—'}
+                </span>
+                <span 
+                  className="text-lg font-medium tabular-nums"
+                  style={{ color: vsSameTimePct !== null && vsSameTimePct >= 0 ? branchColors.primary : '#ef4444' }}
+                >
+                  {vsSameTimePct !== null ? formatPercent(vsSameTimePct) : ''}
+                </span>
+              </div>
+            </div>
+            {/* vs Full Day Last Year */}
+            <div className="bg-background/80 backdrop-blur-sm rounded-md px-3 py-2 border border-border/50">
+              <div className="uppercase tracking-wider text-text-secondary mb-1">
+                vs Full Day LY
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span 
+                  className="text-lg font-semibold tabular-nums"
+                  style={{ color: vsFullDayDiff !== null && vsFullDayDiff >= 0 ? branchColors.primary : '#ef4444' }}
+                >
+                  {vsFullDayDiff !== null ? (vsFullDayDiff >= 0 ? '+' : '') + formatNumber(vsFullDayDiff) : '—'}
+                </span>
+                <span 
+                  className="text-lg font-medium tabular-nums"
+                  style={{ color: vsFullDayPct !== null && vsFullDayPct >= 0 ? branchColors.primary : '#ef4444' }}
+                >
+                  {vsFullDayPct !== null ? formatPercent(vsFullDayPct) : ''}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
         <ResponsiveLine
           data={data}
           margin={{ top: 20, right: 20, bottom: 50, left: 70 }}

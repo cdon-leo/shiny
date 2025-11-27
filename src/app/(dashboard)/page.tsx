@@ -3,9 +3,9 @@
 import { RotateCw } from 'lucide-react';
 import { useDashboard } from '@/context/DashboardContext';
 import { BarChart } from '@/components/BarChart';
-import { LineChart } from '@/components/LineChart';
-import ElectricBorder from '@/components/ElectricBorder';
+import { LineChart, ComparisonStats } from '@/components/LineChart';
 import { BranchName } from '@/lib/colors';
+import { CoolBox } from '@/components/CoolBox';
 
 function formatCountdown(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -21,7 +21,20 @@ export default function ChartsPage() {
     error,
     triggerRefresh,
     nextUpdateCountdown,
+    latestInterval,
   } = useDashboard();
+  
+  // Helper to get comparison stats for a branch
+  const getComparisonStats = (branchName: string): ComparisonStats | undefined => {
+    if (!latestInterval) return undefined;
+    const branchData = latestInterval.branches.find(b => b.branch === branchName);
+    if (!branchData) return undefined;
+    return {
+      cumulativeThisYear: branchData.cumulativeThisYear,
+      cumulativeLastYear: branchData.cumulativeLastYear,
+      cumulativeLastYearFullDay: branchData.cumulativeLastYearFullDay,
+    };
+  };
 
   // Initial loading state
   if (loadState === 'loading' && data.length === 0) {
@@ -79,32 +92,42 @@ export default function ChartsPage() {
       <div className="flex flex-col gap-4 flex-1 min-h-0">
         {/* CDON Row */}
         {cdonData && (
-          <ElectricBorder color="#00983D" speed={0.1} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
+          <CoolBox color="#00983D">
             <div className="flex gap-4 h-full">
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <BarChart data={cdonData.barData} title={barChartTitle} branch={cdonData.branch as BranchName} />
               </div>
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <div className="h-5 mb-1" />
-                <LineChart data={cdonData.lineData} title={lineChartTitle} branch={cdonData.branch as BranchName} />
+                <LineChart 
+                  data={cdonData.lineData} 
+                  title={lineChartTitle} 
+                  branch={cdonData.branch as BranchName}
+                  comparisonStats={getComparisonStats(cdonData.branch)}
+                />
               </div>
             </div>
-          </ElectricBorder>
+          </CoolBox>
         )}
         
         {/* Fyndiq Row */}
         {fyndiqData && (
-          <ElectricBorder color="#FF5E79" speed={0.1} chaos={0.4} thickness={1} className="flex-1 min-h-0 p-4" style={{ borderRadius: '10px' }}>
+          <CoolBox color="#FF5E79">
             <div className="flex gap-4 h-full">
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <BarChart data={fyndiqData.barData} title={barChartTitle} branch={fyndiqData.branch as BranchName} />
               </div>
               <div className="flex-1 flex flex-col min-h-0 min-w-0">
                 <div className="h-5 mb-1" />
-                <LineChart data={fyndiqData.lineData} title={lineChartTitle} branch={fyndiqData.branch as BranchName} />
+                <LineChart 
+                  data={fyndiqData.lineData} 
+                  title={lineChartTitle} 
+                  branch={fyndiqData.branch as BranchName}
+                  comparisonStats={getComparisonStats(fyndiqData.branch)}
+                />
               </div>
             </div>
-          </ElectricBorder>
+          </CoolBox>
         )}
       </div>
     </div>
