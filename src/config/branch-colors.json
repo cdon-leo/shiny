@@ -2,11 +2,13 @@
   "branches": {
     "cdon": {
       "primary": "#087343",
-      "primaryLight": "#86efac"
+      "barColor": "#00983D",
+      "barTextColor": "#00431B"
     },
     "fyndiq": {
       "primary": "#B9375D",
-      "primaryLight": "#f9a8d4"
+      "barColor": "#FF5E79",
+      "barTextColor": "#970820"
     }
   },
   "default": {

@@ -38,7 +38,7 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="text-xl mb-2">Progress at</div>
+        <div className="text-xl mb-3 font-press-start-2p">Progress at</div>
         <span className="font-press-start-2p text-5xl">
           <TypeAnimation
             sequence={[
@@ -50,7 +50,7 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
             cursor={false}
           />
         </span>
-        <p className="text-sm text-text-secondary mt-4 mx-8 text-center">How are we doing so far compared to last year at the same time, and the whole day?</p>
+        <p className="text-sm text-text-secondary mt-6 mx-8 w-2/3 text-center">How are we doing so far compared to last year at the same time, and the whole day?</p>
       </motion.div>
 
       {/* Branch charts side by side */}
@@ -59,8 +59,8 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
           // Find the original branch data to get raw values for change indicators
           const originalBranch = data.branches.find(b => b.branch === branchData.branch);
 
-          const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.primary;
-          
+          const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.barColor;
+          const branchTextColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.barTextColor;
           const logoSrc = branchLogos[branchData.branch];
 
           // Calculate delays for this branch
@@ -102,6 +102,7 @@ export function CumulativeProgressView({ data }: CumulativeProgressViewProps) {
               thisYearDelay={delays.thisYearDelay}
               metricsDelay={delays.metricsDelay}
               thisYearColor={branchColor}
+              thisYearTextColor={branchTextColor}
             />
           );
         })}

@@ -18,6 +18,8 @@ export interface AnimatedBarProps {
   color?: string;
   /** Bar width in pixels */
   width?: number;
+  /** Text color */
+  textColor?: string | undefined;
 }
 
 export function AnimatedBar({
@@ -27,6 +29,7 @@ export function AnimatedBar({
   animationMode = 'expand',
   color = '#171717',
   width = 100,
+  textColor,
 }: AnimatedBarProps) {
   const { BAR_EXPAND_DURATION, BAR_VALUE_DELAY, QUICK_APPEAR } = ANIMATION_TIMING;
   
@@ -75,7 +78,8 @@ export function AnimatedBar({
         transition={barAnimation.transition}
       >
         <motion.span
-          className="absolute top-2 text-sm font-semibold text-white/70 whitespace-pre-line text-center leading-tight"
+          className={`absolute top-2 text-sm font-semibold whitespace-pre-line text-center leading-tight ${textColor ? `` : 'text-white/70'}`}
+          style={{ color: textColor ? textColor : '' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: QUICK_APPEAR, delay: textDelay }}

@@ -4,7 +4,8 @@ export type BranchName = 'cdon' | 'fyndiq';
 
 export interface BranchColorConfig {
   primary: string;
-  primaryLight: string;
+  barColor: string;
+  barTextColor: string;
 }
 
 export function getBranchColors(branch: BranchName): BranchColorConfig {

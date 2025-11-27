@@ -43,6 +43,8 @@ export interface BranchBarsProps {
   barColor?: string;
   /** Color for this year's bars (uses branch primary color) */
   thisYearColor?: string;
+  /** Color for this year's text */
+  thisYearTextColor?: string;
   /** Bar width in pixels */
   barWidth?: number;
 }
@@ -60,6 +62,7 @@ export function BranchBars({
   barColor = 'oklch(37.1% 0 0)',
   thisYearColor,
   barWidth = 100,
+  thisYearTextColor,
 }: BranchBarsProps) {
   const { QUICK_APPEAR } = ANIMATION_TIMING;
 
@@ -83,7 +86,7 @@ export function BranchBars({
       </motion.div>
 
       {/* Chart container with fixed structure */}
-      <div className="flex flex-col h-[75vh]">
+      <div className="flex flex-col mt-1 h-[75vh]">
         {/* Fixed height indicator row - only show if not showMetricsAboveBar */}
         {!showMetricsAboveBar && (
           <div className="h-20 flex items-end gap-4">
@@ -106,17 +109,19 @@ export function BranchBars({
                         return (
                           <div key={i} className="flex flex-col items-center">
                             {indicator.showAbsolute && (
-                              <span className="text-sm text-text-secondary whitespace-nowrap">
+                              <span className="text-lg text-text-secondary whitespace-nowrap">
                                 {formatAbsoluteChange(indicator.fromValue, indicator.toValue)}
                               </span>
                             )}
+                            <div className={`rounded-full w-22 py-1 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>
                             <span
-                              className={`font-medium text-lg whitespace-nowrap ${
-                                isPositive ? 'text-green-700' : 'text-red-700'
+                              className={`font-bold text-2xl whitespace-nowrap ${
+                                isPositive ? 'text-green-600' : 'text-red-600'
                               }`}
                             >
                               {formatPercentChange(percentChange)}
                             </span>
+                            </div>
                           </div>
                         );
                       })}
@@ -142,6 +147,7 @@ export function BranchBars({
                   delay={bar.isThisYear ? thisYearDelay : lastYearDelay}
                   animationMode={bar.isThisYear ? 'expand' : 'fadeIn'}
                   color={color}
+                  textColor={bar.isThisYear && thisYearTextColor ? thisYearTextColor : 'white'}
                   width={barWidth}
                 />
                 {/* Show metrics above bar if showMetricsAboveBar is enabled */}

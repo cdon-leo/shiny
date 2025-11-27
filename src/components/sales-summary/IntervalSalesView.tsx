@@ -59,7 +59,7 @@ export function IntervalSalesView({ data }: IntervalSalesViewProps) {
           // Find the original branch data to get raw values for change indicator
           const originalBranch = data.branches.find(b => b.branch === branchData.branch);
 
-          const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.primary;
+          const branchColor = branchColors.branches[branchData.branch as keyof typeof branchColors.branches]?.barColor;
 
           const logoSrc = branchLogos[branchData.branch];
 
