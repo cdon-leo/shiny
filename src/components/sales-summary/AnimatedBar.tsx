@@ -78,7 +78,7 @@ export function AnimatedBar({
         transition={barAnimation.transition}
       >
         <motion.span
-          className={`absolute top-2 text-lg font-bold whitespace-pre-line text-center leading-tight ${textColor ? `` : 'text-white/70'}`}
+          className={`absolute top-2 text-2xl font-bold whitespace-pre-line text-center leading-tight ${textColor ? `` : 'text-white/70'}`}
           style={{ color: textColor ? textColor : '' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

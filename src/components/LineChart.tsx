@@ -88,16 +88,14 @@ export function LineChart({ data, title, branch, comparisonStats }: LineChartPro
               <div className="uppercase tracking-wider text-text-secondary mb-1">
                 vs Same Time LY
               </div>
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-4">
                 <span 
-                  className="text-lg font-semibold tabular-nums"
-                  style={{ color: vsSameTimeDiff !== null && vsSameTimeDiff >= 0 ? branchColors.primary : '#ef4444' }}
+                  className={`text-lg font-semibold tabular-nums ${vsSameTimeDiff !== null && vsSameTimeDiff >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
                   {vsSameTimeDiff !== null ? (vsSameTimeDiff >= 0 ? '+' : '') + formatNumber(vsSameTimeDiff) : '—'}
                 </span>
                 <span 
-                  className="text-lg font-medium tabular-nums"
-                  style={{ color: vsSameTimePct !== null && vsSameTimePct >= 0 ? branchColors.primary : '#ef4444' }}
+                  className={`text-lg font-bold tabular-nums ${vsSameTimePct !== null && vsSameTimePct >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
                   {vsSameTimePct !== null ? formatPercent(vsSameTimePct) : ''}
                 </span>
@@ -108,16 +106,14 @@ export function LineChart({ data, title, branch, comparisonStats }: LineChartPro
               <div className="uppercase tracking-wider text-text-secondary mb-1">
                 vs Full Day LY
               </div>
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-4">
                 <span 
-                  className="text-lg font-semibold tabular-nums"
-                  style={{ color: vsFullDayDiff !== null && vsFullDayDiff >= 0 ? branchColors.primary : '#ef4444' }}
+                  className={`text-lg font-semibold tabular-nums ${vsFullDayDiff !== null && vsFullDayDiff >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
                   {vsFullDayDiff !== null ? (vsFullDayDiff >= 0 ? '+' : '') + formatNumber(vsFullDayDiff) : '—'}
                 </span>
                 <span 
-                  className="text-lg font-medium tabular-nums"
-                  style={{ color: vsFullDayPct !== null && vsFullDayPct >= 0 ? branchColors.primary : '#ef4444' }}
+                  className={`text-lg font-bold tabular-nums ${vsFullDayPct !== null && vsFullDayPct >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
                   {vsFullDayPct !== null ? formatPercent(vsFullDayPct) : ''}
                 </span>

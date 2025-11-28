@@ -84,8 +84,8 @@ export default function ChartsPage() {
           </div>
         </button>
         <div className="flex items-center gap-2 justify-end">
-          <span className="text-sm text-text-secondary">Next update in</span>
-          <span className="text-base font-semibold tabular-nums min-w-12">{formatCountdown(nextUpdateCountdown)}</span>
+          <span className="text-2xl text-text-secondary">Next update in</span>
+          <span className="text-2xl font-semibold tabular-nums min-w-12">{formatCountdown(nextUpdateCountdown)}</span>
         </div>
       </header>
 

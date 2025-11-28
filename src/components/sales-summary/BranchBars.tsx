@@ -90,10 +90,10 @@ export function BranchBars({
       </motion.div>
 
       {/* Chart container with fixed structure */}
-      <div className="flex flex-col mt-1 h-[75vh]">
+      <div className="flex flex-col mt-1 h-[70vh]">
         {/* Fixed height indicator row - only show if not showMetricsAboveBar */}
         {!showMetricsAboveBar && (
-          <div className="h-20 flex items-end gap-4">
+          <div className="h-20 flex items-end gap-4 mt-6">
             {bars.map((bar, index) => {
               const indicators = changeIndicators.filter(c => c.afterBarIndex === index);
 
@@ -111,15 +111,15 @@ export function BranchBars({
                         const isPositive = percentChange >= 0;
 
                         return (
-                          <div key={i} className="flex flex-col items-center">
+                          <div key={i} className="flex flex-col items-center mt-2">
                             {indicator.showAbsolute && (
-                              <span className="text-xl text-text-secondary whitespace-nowrap">
+                              <span className="text-4xl font-bold tabular-nums text-text-secondary whitespace-nowrap">
                                 {formatAbsoluteChange(indicator.fromValue, indicator.toValue, metric)}
                               </span>
                             )}
-                            <div className={`rounded-full w-22 py-1 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>
+                            <div className={`rounded-full w-22 py-1.5 px-6 mt-2 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>
                             <span
-                              className={`font-bold text-2xl whitespace-nowrap ${
+                              className={`font-bold text-4xl tabular-nums whitespace-nowrap ${
                                 isPositive ? 'text-green-600' : 'text-red-600'
                               }`}
                             >
@@ -170,13 +170,13 @@ export function BranchBars({
                       return (
                         <div key={i} className="flex flex-col items-center">
                           {indicator.showAbsolute && (
-                            <span className="text-xl font-medium text-text-secondary whitespace-nowrap mb-2">
+                            <span className="text-4xl font-bold tabular-nums text-text-secondary whitespace-nowrap mb-2">
                               {formatAbsoluteChange(indicator.fromValue, indicator.toValue, metric)}
                             </span>
                           )}
-                          <div className={`rounded-full w-22 py-1 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>
+                          <div className={`rounded-full w-22 py-1.5 px-6 mt-2 flex items-center justify-center ${isPositive ? 'bg-green-600/20' : 'bg-red-700/20'}`}>
                           <span
-                            className={`font-bold text-xl whitespace-nowrap ${
+                            className={`font-bold text-4xl tabular-nums whitespace-nowrap ${
                               isPositive ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
@@ -198,7 +198,7 @@ export function BranchBars({
           {bars.map((bar) => (
             <motion.span
               key={`label-${bar.id}`}
-              className="text-sm text-text-secondary whitespace-pre-line text-center leading-tight"
+              className="text-2xl font-bold text-text-secondary whitespace-pre-line text-center leading-tight"
               style={{ width: barWidth }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

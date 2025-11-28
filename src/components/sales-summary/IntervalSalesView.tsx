@@ -42,7 +42,7 @@ export function IntervalSalesView({ data, metric }: IntervalSalesViewProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="text-md mb-3 font-press-start-2p">{titleText}</div>
+        <div className="text-xl mb-3 font-press-start-2p text-center">{titleText}</div>
         <span className="font-press-start-2p text-3xl">
           <TypeAnimation
             sequence={[
@@ -77,8 +77,8 @@ export function IntervalSalesView({ data, metric }: IntervalSalesViewProps) {
                 <Image
                   src={logoSrc}
                   alt={branchData.branch}
-                  width={branchData.branch === 'fyndiq' ? 100 : 48}
-                  height={48}
+                  width={branchData.branch === 'fyndiq' ? 200 : 96}
+                  height={96}
                 />
               )}
               bars={branchData.bars}

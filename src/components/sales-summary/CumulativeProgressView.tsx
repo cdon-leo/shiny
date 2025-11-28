@@ -39,8 +39,8 @@ export function CumulativeProgressView({ data, metric }: CumulativeProgressViewP
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="text-xl mb-6 font-press-start-2p text-center">Total orders compared to last year</div>
-        <div className="text-xl mb-3 font-press-start-2p text-center">Time:</div>
+        <div className="text-2xl mb-6 font-press-start-2p text-center">Total orders compared to last year</div>
+        <div className="text-2xl mb-3 font-press-start-2p text-center">Time:</div>
         <span className="font-press-start-2p text-5xl">
           <TypeAnimation
             sequence={[
@@ -77,8 +77,8 @@ export function CumulativeProgressView({ data, metric }: CumulativeProgressViewP
                 <Image
                   src={logoSrc}
                   alt={branchData.branch}
-                  width={branchData.branch === 'fyndiq' ? 100 : 48}
-                  height={48}
+                  width={branchData.branch === 'fyndiq' ? 200 : 96}
+                  height={96}
                 />
               )}
               bars={branchData.bars}
